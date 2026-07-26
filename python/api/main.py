@@ -7,12 +7,14 @@ from .schemas import (
     FeatureSampleResponse,
     HealthResponse,
     ReplaySummaryResponse,
+    SnapshotInspectResponse,
     SnapshotSampleResponse,
 )
 from .services import (
     build_columns_response,
     build_feature_sample,
     build_replay_summary,
+    build_snapshot_inspect,
     build_snapshot_sample,
 )
 
@@ -86,3 +88,16 @@ def snapshot_sample(
     offset: int = Query(default=0, ge=0),
 ) -> SnapshotSampleResponse:
     return SnapshotSampleResponse(**build_snapshot_sample(snapshot_csv, limit, offset))
+
+
+@app.get(
+    "/api/snapshots/inspect",
+    response_model=SnapshotInspectResponse,
+    responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}},
+    tags=["snapshots"],
+)
+def snapshot_inspect(
+    snapshot_csv: str | None = Query(default=None, description="Path to snapshot CSV"),
+    row_index: int = Query(default=0, ge=0),
+) -> SnapshotInspectResponse:
+    return SnapshotInspectResponse(**build_snapshot_inspect(snapshot_csv, row_index))

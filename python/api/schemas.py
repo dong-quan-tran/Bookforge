@@ -45,6 +45,28 @@ class SnapshotSampleResponse(BaseModel):
     rows: list[SnapshotSampleRow]
 
 
+class SnapshotLevel(BaseModel):
+    level: int
+    price: float | None = None
+    size: float | None = None
+
+
+class SnapshotInspectResponse(BaseModel):
+    snapshot_csv: str
+    row_index: int
+    total_rows: int
+    symbol: str | None = None
+    replay_event_index: int | None = None
+    replay_timestamp_ns: int | None = None
+    best_bid: float | None = None
+    best_ask: float | None = None
+    spread: float | None = None
+    mid_price: float | None = None
+    bids: list[SnapshotLevel]
+    asks: list[SnapshotLevel]
+    raw_values: dict[str, Any]
+
+
 class ColumnsResponse(BaseModel):
     features_csv: str
     columns: list[str]
