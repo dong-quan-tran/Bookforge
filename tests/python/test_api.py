@@ -31,10 +31,19 @@ def _write_snapshots_csv(tmp_path: Path) -> Path:
         {
             "replay_event_index": [0, 1],
             "replay_timestamp_ns": [100, 200],
+            "symbol": ["BTCUSDT.P", "BTCUSDT.P"],
             "best_bid": [99.5, 99.75],
             "best_ask": [100.5, 100.75],
             "mid_price": [100.0, 100.25],
             "spread": [1.0, 1.0],
+            "bid_price_1": [99.5, 99.75],
+            "bid_size_1": [10.0, 11.0],
+            "bid_price_2": [99.0, 99.25],
+            "bid_size_2": [8.0, 9.0],
+            "ask_price_1": [100.5, 100.75],
+            "ask_size_1": [9.0, 10.0],
+            "ask_price_2": [101.0, 101.25],
+            "ask_size_2": [7.0, 8.0],
         }
     )
     path = tmp_path / "snapshots.csv"
@@ -88,6 +97,27 @@ def test_snapshot_sample(tmp_path: Path):
     body = response.json()
     assert body["returned_count"] == 1
     assert "best_bid" in body["rows"][0]["values"]
+
+
+def test_snapshot_inspect(tmp_path: Path):
+    csv_path = _write_snapshots_csv(tmp_path)
+    response = client.get(
+        "/api/snapshots/inspect",
+        params={"snapshot_csv": str(csv_path), "row_index": 1},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["row_index"] == 1
+    assert body["symbol"] == "BTCUSDT.P"
+    assert body["best_bid"] == 99.75
+    assert body["best_ask"] == 100.75
+    assert body["mid_price"] == 100.25
+    assert len(body["bids"]) == 2
+    assert len(body["asks"]) == 2
+    assert body["bids"][0]["price"] == 99.75
+    assert body["bids"][0]["size"] == 11.0
+    assert body["asks"][0]["price"] == 100.75
+    assert body["asks"][0]["size"] == 10.0
 
 
 def test_missing_file_returns_404(tmp_path: Path):
