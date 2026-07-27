@@ -173,9 +173,14 @@ TEST(FeatureBuilderTest, CsvWriterProducesStableHeaderAndRows) {
 
     std::string header;
     std::getline(in, header);
-    EXPECT_EQ(header,
-          "symbol,replay_event_index,replay_timestamp_ns,best_bid,best_ask,spread,mid_price,l1_bid_qty,l1_ask_qty,l1_depth_imbalance,lN_bid_qty_sum,lN_ask_qty_sum,lN_depth_imbalance,ofi_l1,ofi_lN,weighted_ofi_lN");
-
+    EXPECT_EQ(
+        header,
+        "symbol,replay_event_index,replay_timestamp_ns,best_bid,best_ask,spread,mid_price,"
+        "l1_bid_qty,l1_ask_qty,l1_depth_imbalance,lN_bid_qty_sum,lN_ask_qty_sum,"
+        "lN_depth_imbalance,ofi_l1,ofi_lN,weighted_ofi_lN,rolling_mean_spread,"
+        "rolling_mean_l1_total_depth,rolling_mean_lN_total_depth,rolling_mid_return,"
+        "rolling_realized_mid_vol,rolling_mean_abs_ofi_l1,rolling_mean_abs_ofi_lN");
+        
     std::string row;
     std::getline(in, row);
     EXPECT_FALSE(row.empty());
