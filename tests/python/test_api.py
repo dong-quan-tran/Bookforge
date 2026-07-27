@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pandas as pd
-from fastapi.testclient import TestClient
-
 from api.main import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 
