@@ -845,3 +845,132 @@ Still open:
 - The API/demo layer is now strong enough to show as part of the portfolio narrative, even though snapshot inspection and some polish items are still pending.
 
 ---
+
+# Progress Log — 2026-07-26
+
+## Summary
+
+Today focused on moving the project into Phase 9 polish work: tightening the repo structure, adding CI, adding lint/format configuration, and cleaning up Python code around the new API and research stack. The main theme was shifting the repo from “functional” toward “maintainable and interview-ready.”
+
+---
+
+## Completed today
+
+### CI and repo hygiene
+- Added GitHub Actions CI for the project.
+- Configured CI to cover the C++ build, C++ tests, and Python tests.
+- Added Python lint/format configuration through `pyproject.toml`.
+- Added `.clang-format` for future C++ formatting enforcement.
+- Updated the CI pipeline to support linting and formatting checks.
+- Confirmed the repo structure is now better aligned with long-term maintenance.
+
+### Python cleanup
+- Ran Ruff over the Python codebase.
+- Fixed unused imports and formatting issues reported by Ruff.
+- Cleaned up several files in:
+  - `python/bookforge_py/`
+  - `python/ml/`
+  - `tests/python/`
+  - `tools/validate_feature_export.py`
+- Normalized Python formatting in the updated files.
+
+### API and dashboard polish
+- Continued the new API inspection layer work.
+- Verified the snapshot inspection endpoint and related API tests are committed.
+- Kept the dashboard/API structure aligned with the current local demo workflow.
+
+### Docs and planning
+- Reviewed the latest README content against the current implementation.
+- Confirmed the README needed only small status-sync updates rather than a full rewrite.
+- Moved Phase 9 forward by identifying the next engineering polish tasks.
+
+---
+
+## Current result
+
+The repo is now in a better place technically:
+
+- CI is in place.
+- Python formatting/lint rules are now defined.
+- The API layer and dashboard are integrated into the current project story.
+- The codebase is cleaner and closer to being a serious portfolio project.
+
+---
+
+## Files touched today
+
+### Added
+- `.github/workflows/ci.yml`
+- `pyproject.toml`
+- `.clang-format`
+
+### Modified
+- `docs/BLUEPRINT.md`
+- `python/api/__init__.py`
+- `python/api/main.py`
+- `python/api/schemas.py`
+- `python/api/services.py`
+- `python/bookforge_py/__init__.py`
+- `python/bookforge_py/dataset.py`
+- `python/bookforge_py/impact.py`
+- `python/bookforge_py/labels.py`
+- `python/bookforge_py/loaders.py`
+- `python/bookforge_py/test_import.py`
+- `python/ml/__init__.py`
+- `python/ml/train.py`
+- `tests/python/test_api.py`
+- `tests/python/test_dataset.py`
+- `tests/python/test_loaders.py`
+- `tools/validate_feature_export.py`
+
+### Removed
+- `setup.py`
+
+---
+
+## Commits made today
+
+- Added GitHub Actions CI.
+- Added lint and formatting configuration.
+- Fixed Python dependency list.
+- Committed the snapshot inspection endpoint and its tests earlier in the session.
+- Committed the API and docs status updates separately.
+
+---
+
+## Phase impact
+
+### Phase 9 — Performance and engineering polish
+Completed or advanced:
+- GitHub Actions CI
+- formatting / linting rules
+- improved repo hygiene
+- README status alignment
+- Python cleanup from Ruff output
+
+Still open:
+- Reach 50+ Google Tests
+- Reach 50+ Pytest cases
+- Add C++ benchmarks
+- Add replay throughput benchmark
+- Add profiling notes
+- Finish `docs/INTERVIEW_PREP.md`
+- Add architecture diagrams
+- Tag a clean milestone release
+
+---
+
+## Notes
+
+- C++ formatting has been prepared but not yet applied locally.
+- The Windows environment needs a usable C++ formatter installation before that step can happen cleanly.
+- The main priority for today was to land the CI and lint infrastructure first, which is now done.
+
+---
+
+## Next step
+
+The next best Phase 9 task is likely documentation polish, especially:
+- improving the README wording and status tables,
+- finishing `docs/INTERVIEW_PREP.md`,
+- and then returning to benchmarks and test-count growth.
