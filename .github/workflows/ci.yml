@@ -44,35 +44,35 @@ jobs:
           PYTHONPATH: python
         run: pytest tests/python -q
 
-lint:
-  runs-on: ubuntu-latest
-
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-
-    - name: Install clang-format 19
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang-format-19
-
-    - name: Install Ruff
-      run: |
-        python -m pip install --upgrade pip
-        pip install ruff
-
-    - name: Run Ruff
-      run: ruff check .
-
-    - name: Check Python formatting
-      run: ruff format --check .
-
-    - name: Check C++ formatting
-      run: |
-        find src tests bench -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" \) -print0 | \
-        xargs -0 clang-format-19 --dry-run --Werror -style=file
+  lint:
+    runs-on: ubuntu-latest
+  
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+  
+      - name: Install clang-format 19
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-19
+  
+      - name: Install Ruff
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+  
+      - name: Run Ruff
+        run: ruff check .
+  
+      - name: Check Python formatting
+        run: ruff format --check .
+  
+      - name: Check C++ formatting
+        run: |
+          find src tests bench -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" \) -print0 | \
+          xargs -0 clang-format-19 --dry-run --Werror -style=file
