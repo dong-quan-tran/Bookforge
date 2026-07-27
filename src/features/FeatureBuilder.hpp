@@ -9,16 +9,16 @@
 namespace bookforge {
 
 class FeatureBuilder {
-public:
+  public:
     [[nodiscard]] static std::vector<FeatureRow>
-    BuildFromSnapshots(const std::vector<BookSnapshot>& snapshots,
+    BuildFromSnapshots(const std::vector<BookSnapshot> &snapshots,
                        std::size_t depth_levels_for_imbalance);
 
-private:
-    [[nodiscard]] static FeatureRow BuildOne(const BookSnapshot& snapshot,
+  private:
+    [[nodiscard]] static FeatureRow BuildOne(const BookSnapshot &snapshot,
                                              std::size_t depth_levels_for_imbalance);
-    [[nodiscard]] static std::optional<double>
-    ComputeDepthImbalance(double bid_qty, double ask_qty);
+    [[nodiscard]] static std::optional<double> ComputeDepthImbalance(double bid_qty,
+                                                                     double ask_qty);
 };
 
-}  // namespace bookforge
+} // namespace bookforge

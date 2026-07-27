@@ -23,13 +23,7 @@ struct TopOfBookSnapshot {
     std::optional<std::uint32_t> best_ask_volume;
 };
 
-enum class EngineEventType : std::uint8_t {
-    Accepted,
-    Rested,
-    Canceled,
-    TradeExecuted,
-    Rejected
-};
+enum class EngineEventType : std::uint8_t { Accepted, Rested, Canceled, TradeExecuted, Rejected };
 
 struct EngineEventLogEntry {
     EngineEventType type;
@@ -41,29 +35,31 @@ struct EngineEventLogEntry {
 };
 
 class MatchingEngine {
-public:
+  public:
     MatchingEngine() = default;
 
-    OrderBook& Book() { return book_; }
-    const OrderBook& Book() const { return book_; }
+    OrderBook &Book() {
+        return book_;
+    }
+    const OrderBook &Book() const {
+        return book_;
+    }
 
-    MatchResult MatchLimitOrder(const Order& order);
+    MatchResult MatchLimitOrder(const Order &order);
     bool CancelOrder(std::uint64_t order_id);
 
     [[nodiscard]] TopOfBookSnapshot CaptureTopOfBook() const;
-    [[nodiscard]] const std::vector<EngineEventLogEntry>& EventLog() const { return event_log_; }
+    [[nodiscard]] const std::vector<EngineEventLogEntry> &EventLog() const {
+        return event_log_;
+    }
 
-private:
-    void LogEvent(EngineEventType type,
-                  std::uint64_t order_id,
-                  std::uint64_t related_order_id,
-                  double price,
-                  std::uint32_t quantity,
-                  std::uint64_t timestamp);
+  private:
+    void LogEvent(EngineEventType type, std::uint64_t order_id, std::uint64_t related_order_id,
+                  double price, std::uint32_t quantity, std::uint64_t timestamp);
 
-private:
+  private:
     OrderBook book_;
     std::vector<EngineEventLogEntry> event_log_{};
 };
 
-}  // namespace bookforge
+} // namespace bookforge

@@ -50,8 +50,10 @@ PYBIND11_MODULE(bookforge_py, m) {
         .def_readwrite("ofi_lN", &bookforge::FeatureRow::ofi_lN)
         .def_readwrite("weighted_ofi_lN", &bookforge::FeatureRow::weighted_ofi_lN)
         .def_readwrite("rolling_mean_spread", &bookforge::FeatureRow::rolling_mean_spread)
-        .def_readwrite("rolling_mean_l1_total_depth", &bookforge::FeatureRow::rolling_mean_l1_total_depth)
-        .def_readwrite("rolling_mean_lN_total_depth", &bookforge::FeatureRow::rolling_mean_lN_total_depth)
+        .def_readwrite("rolling_mean_l1_total_depth",
+                       &bookforge::FeatureRow::rolling_mean_l1_total_depth)
+        .def_readwrite("rolling_mean_lN_total_depth",
+                       &bookforge::FeatureRow::rolling_mean_lN_total_depth)
         .def_readwrite("rolling_mid_return", &bookforge::FeatureRow::rolling_mid_return)
         .def_readwrite("rolling_realized_mid_vol", &bookforge::FeatureRow::rolling_realized_mid_vol)
         .def_readwrite("rolling_mean_abs_ofi_l1", &bookforge::FeatureRow::rolling_mean_abs_ofi_l1)

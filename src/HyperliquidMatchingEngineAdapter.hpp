@@ -5,8 +5,8 @@
 #include <limits>
 #include <vector>
 
-#include "IReplayAdapter.hpp"
 #include "ExternalOrderEvent.hpp"
+#include "IReplayAdapter.hpp"
 #include "core/matching_engine.hpp"
 #include "core/order.hpp"
 #include "core/trade.hpp"
@@ -28,11 +28,10 @@ struct ReplayStats {
 };
 
 class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
-public:
-    explicit HyperliquidMatchingEngineAdapter(MatchingEngine& engine)
-        : engine_(engine) {}
+  public:
+    explicit HyperliquidMatchingEngineAdapter(MatchingEngine &engine) : engine_(engine) {}
 
-    void OnEvent(const ExternalOrderEvent& ev) override {
+    void OnEvent(const ExternalOrderEvent &ev) override {
         ++stats_.totalEvents;
 
         switch (ev.eventType) {
@@ -69,20 +68,20 @@ public:
         }
     }
 
-    const AdapterMetrics& Metrics() const override {
+    const AdapterMetrics &Metrics() const override {
         return metrics_;
     }
 
-    const ReplayStats& Stats() const {
+    const ReplayStats &Stats() const {
         return stats_;
     }
 
-    const std::vector<Trade>& Trades() const {
+    const std::vector<Trade> &Trades() const {
         return trades_;
     }
 
-private:
-    void SubmitNewOrder(const ExternalOrderEvent& ev) {
+  private:
+    void SubmitNewOrder(const ExternalOrderEvent &ev) {
         Order order{};
         order.id = nextSyntheticOrderId_++;
         order.participant_id = 0;
@@ -104,32 +103,32 @@ private:
         ++metrics_.submitted;
         stats_.generatedTrades += result.trades.size();
 
-        for (const auto& trade : result.trades) {
+        for (const auto &trade : result.trades) {
             trades_.push_back(trade);
         }
     }
 
-    void HandleCancel(const ExternalOrderEvent&) {
+    void HandleCancel(const ExternalOrderEvent &) {
         ++stats_.ignoredEvents;
         ++metrics_.unsupported;
     }
 
-    void HandleFill(const ExternalOrderEvent&) {
+    void HandleFill(const ExternalOrderEvent &) {
         ++stats_.ignoredEvents;
         ++metrics_.unsupported;
     }
 
-    void HandleReject(const ExternalOrderEvent&) {
+    void HandleReject(const ExternalOrderEvent &) {
         ++stats_.ignoredEvents;
         ++metrics_.rejected;
     }
 
-    void HandleTrigger(const ExternalOrderEvent&) {
+    void HandleTrigger(const ExternalOrderEvent &) {
         ++stats_.ignoredEvents;
         ++metrics_.ignored;
     }
 
-    void HandleOther(const ExternalOrderEvent&) {
+    void HandleOther(const ExternalOrderEvent &) {
         ++stats_.ignoredEvents;
         ++metrics_.ignored;
     }
@@ -152,8 +151,8 @@ private:
         return static_cast<std::uint32_t>(qty);
     }
 
-private:
-    MatchingEngine& engine_;
+  private:
+    MatchingEngine &engine_;
     ReplayStats stats_{};
     AdapterMetrics metrics_{};
     std::vector<Trade> trades_{};

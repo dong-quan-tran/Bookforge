@@ -13,13 +13,12 @@
 namespace bookforge {
 namespace {
 
-std::string trim(const std::string& s) {
-    const auto begin = std::find_if_not(s.begin(), s.end(), [](unsigned char ch) {
-        return std::isspace(ch);
-    });
+std::string trim(const std::string &s) {
+    const auto begin =
+        std::find_if_not(s.begin(), s.end(), [](unsigned char ch) { return std::isspace(ch); });
     const auto end = std::find_if_not(s.rbegin(), s.rend(), [](unsigned char ch) {
-        return std::isspace(ch);
-    }).base();
+                         return std::isspace(ch);
+                     }).base();
 
     if (begin >= end) {
         return "";
@@ -27,7 +26,7 @@ std::string trim(const std::string& s) {
     return std::string(begin, end);
 }
 
-std::vector<std::string> split_csv_simple(const std::string& line) {
+std::vector<std::string> split_csv_simple(const std::string &line) {
     std::vector<std::string> fields;
     std::stringstream ss(line);
     std::string item;
@@ -39,7 +38,7 @@ std::vector<std::string> split_csv_simple(const std::string& line) {
     return fields;
 }
 
-bool parse_bool(const std::string& value) {
+bool parse_bool(const std::string &value) {
     if (value == "True" || value == "true" || value == "1") {
         return true;
     }
@@ -49,14 +48,13 @@ bool parse_bool(const std::string& value) {
     throw std::runtime_error("invalid boolean value: " + value);
 }
 
-std::chrono::nanoseconds parse_timestamp_stub(const std::string&) {
+std::chrono::nanoseconds parse_timestamp_stub(const std::string &) {
     return std::chrono::nanoseconds{0};
 }
 
 } // namespace
 
-HyperliquidCsvReader::HyperliquidCsvReader(std::string path)
-    : path_(std::move(path)) {}
+HyperliquidCsvReader::HyperliquidCsvReader(std::string path) : path_(std::move(path)) {}
 
 std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all() {
     return read_all(false, true);
@@ -82,8 +80,7 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
 
         if (!header_skipped) {
             header_skipped = true;
-            if (line.find("ts") != std::string::npos &&
-                line.find("limitPx") != std::string::npos) {
+            if (line.find("ts") != std::string::npos && line.find("limitPx") != std::string::npos) {
                 continue;
             }
         }
@@ -110,10 +107,10 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
             }
 
             events.push_back(ev);
-        } catch (const std::exception& ex) {
+        } catch (const std::exception &ex) {
             if (log_errors) {
-                std::cerr << "Malformed Hyperliquid CSV row at line "
-                          << line_number << ": " << ex.what() << "\n";
+                std::cerr << "Malformed Hyperliquid CSV row at line " << line_number << ": "
+                          << ex.what() << "\n";
             }
             if (strict_mode) {
                 throw;
@@ -124,7 +121,7 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
     return events;
 }
 
-EventType HyperliquidCsvReader::map_event_type(const std::string& statusText) const {
+EventType HyperliquidCsvReader::map_event_type(const std::string &statusText) const {
     const std::string s = trim(statusText);
 
     if (s == "open" || s == "resting" || s == "received") {
@@ -139,8 +136,7 @@ EventType HyperliquidCsvReader::map_event_type(const std::string& statusText) co
     if (s == "triggered" || s == "trigger") {
         return EventType::Trigger;
     }
-    if (s.find("Rejected") != std::string::npos ||
-        s.find("rejected") != std::string::npos) {
+    if (s.find("Rejected") != std::string::npos || s.find("rejected") != std::string::npos) {
         return EventType::Reject;
     }
 

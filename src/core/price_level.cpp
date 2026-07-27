@@ -4,7 +4,7 @@ namespace bookforge {
 
 PriceLevel::PriceLevel(double price) : price_(price) {}
 
-PriceLevel::Iterator PriceLevel::AddOrder(const Order& order) {
+PriceLevel::Iterator PriceLevel::AddOrder(const Order &order) {
     orders_.push_back(order);
     auto it = orders_.end();
     --it;
@@ -69,7 +69,7 @@ double PriceLevel::GetPrice() const {
 
 std::uint32_t PriceLevel::TotalVolume() const {
     std::uint32_t total = 0;
-    for (const auto& order : orders_) {
+    for (const auto &order : orders_) {
         total += order.quantity;
     }
     return total;
@@ -83,4 +83,4 @@ std::size_t PriceLevel::OrderCount() const {
     return orders_.size();
 }
 
-}  // namespace bookforge
+} // namespace bookforge

@@ -34,33 +34,32 @@ struct ExportConfig {
     bool log_errors = true;
 };
 
-void PrintUsage(const char* program_name) {
-    std::cout
-        << "Usage: " << program_name << " [options]\n"
-        << "\n"
-        << "Options:\n"
-        << "  --input PATH              Input Hyperliquid CSV path\n"
-        << "  --output PATH             Output feature CSV path\n"
-        << "  --symbol SYMBOL           Symbol name to stamp into snapshots/features\n"
-        << "  --snapshot-depth N        Depth levels captured in snapshots\n"
-        << "  --imbalance-depth N       Depth levels used for depth imbalance features\n"
-        << "  --ofi-depth N             Depth levels used for OFI features\n"
-        << "  --rolling-window N        Rolling window size in rows\n"
-        << "  --max-events N            Maximum events to process (0 = all)\n"
-        << "  --start-offset N          Event offset to start from\n"
-        << "  --log-every N             Progress log frequency\n"
-        << "  --strict                  Enable strict CSV parsing mode\n"
-        << "  --no-log-errors           Disable CSV parse error logging\n"
-        << "  --help                    Show this help text\n";
+void PrintUsage(const char *program_name) {
+    std::cout << "Usage: " << program_name << " [options]\n"
+              << "\n"
+              << "Options:\n"
+              << "  --input PATH              Input Hyperliquid CSV path\n"
+              << "  --output PATH             Output feature CSV path\n"
+              << "  --symbol SYMBOL           Symbol name to stamp into snapshots/features\n"
+              << "  --snapshot-depth N        Depth levels captured in snapshots\n"
+              << "  --imbalance-depth N       Depth levels used for depth imbalance features\n"
+              << "  --ofi-depth N             Depth levels used for OFI features\n"
+              << "  --rolling-window N        Rolling window size in rows\n"
+              << "  --max-events N            Maximum events to process (0 = all)\n"
+              << "  --start-offset N          Event offset to start from\n"
+              << "  --log-every N             Progress log frequency\n"
+              << "  --strict                  Enable strict CSV parsing mode\n"
+              << "  --no-log-errors           Disable CSV parse error logging\n"
+              << "  --help                    Show this help text\n";
 }
 
-ExportConfig ParseArgs(int argc, char** argv) {
+ExportConfig ParseArgs(int argc, char **argv) {
     ExportConfig cfg;
 
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
 
-        auto require_value = [&](const std::string& name) -> std::string {
+        auto require_value = [&](const std::string &name) -> std::string {
             if (i + 1 >= argc) {
                 throw std::runtime_error("missing value for argument: " + name);
             }
@@ -102,9 +101,9 @@ ExportConfig ParseArgs(int argc, char** argv) {
     return cfg;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     try {
         const ExportConfig cfg = ParseArgs(argc, argv);
 
@@ -118,8 +117,7 @@ int main(int argc, char** argv) {
         snapshots.reserve(events.size());
 
         const std::size_t total = events.size();
-        const std::size_t start =
-            cfg.start_offset > total ? total : cfg.start_offset;
+        const std::size_t start = cfg.start_offset > total ? total : cfg.start_offset;
 
         std::size_t processed = 0;
 
@@ -128,7 +126,7 @@ int main(int argc, char** argv) {
                 break;
             }
 
-            const auto& ev = events[i];
+            const auto &ev = events[i];
             adapter.OnEvent(ev);
             ++processed;
 
@@ -137,37 +135,25 @@ int main(int argc, char** argv) {
             ctx.replay_event_index = static_cast<std::uint64_t>(processed);
             ctx.replay_timestamp_ns = static_cast<std::uint64_t>(ev.ts.count());
 
-            const auto& stats = adapter.Stats();
+            const auto &stats = adapter.Stats();
             ctx.total_events_seen = static_cast<std::uint64_t>(stats.totalEvents);
             ctx.submitted_orders = static_cast<std::uint64_t>(stats.submittedOrders);
             ctx.rejected_events = static_cast<std::uint64_t>(stats.rejectCount);
             ctx.ignored_events = static_cast<std::uint64_t>(stats.ignoredEvents);
             ctx.generated_trades = static_cast<std::uint64_t>(stats.generatedTrades);
 
-            snapshots.push_back(
-                SnapshotBuilder::Build(engine, ctx, cfg.snapshot_depth)
-            );
+            snapshots.push_back(SnapshotBuilder::Build(engine, ctx, cfg.snapshot_depth));
 
             if (cfg.log_every_n != 0 && processed % cfg.log_every_n == 0) {
                 std::cout << "[feature_export] processed=" << processed << '\n';
             }
         }
 
-        auto rows = FeatureBuilder::BuildFromSnapshots(
-            snapshots,
-            cfg.imbalance_depth
-        );
+        auto rows = FeatureBuilder::BuildFromSnapshots(snapshots, cfg.imbalance_depth);
 
-        OfiFeatureBuilder::AddOfiFeatures(
-            rows,
-            snapshots,
-            cfg.ofi_depth
-        );
+        OfiFeatureBuilder::AddOfiFeatures(rows, snapshots, cfg.ofi_depth);
 
-        RollingFeatureBuilder::AddRollingContextFeatures(
-            rows,
-            cfg.rolling_window
-        );
+        RollingFeatureBuilder::AddRollingContextFeatures(rows, cfg.rolling_window);
 
         const std::filesystem::path output_path(cfg.output_path);
         if (output_path.has_parent_path()) {
@@ -176,12 +162,11 @@ int main(int argc, char** argv) {
 
         FeatureCsvWriter::Write(cfg.output_path, rows);
 
-        std::cout
-            << "[feature_export] wrote_rows=" << rows.size() << "\n"
-            << "[feature_export] output=" << cfg.output_path << "\n";
+        std::cout << "[feature_export] wrote_rows=" << rows.size() << "\n"
+                  << "[feature_export] output=" << cfg.output_path << "\n";
 
         return 0;
-    } catch (const std::exception& ex) {
+    } catch (const std::exception &ex) {
         std::cerr << "[feature_export] failed: " << ex.what() << "\n";
         return 1;
     }

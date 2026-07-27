@@ -37,4 +37,4 @@ struct FeatureRow {
     std::optional<double> rolling_mean_abs_ofi_lN;
 };
 
-}  // namespace bookforge
+} // namespace bookforge

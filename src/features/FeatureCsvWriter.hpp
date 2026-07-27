@@ -8,9 +8,8 @@
 namespace bookforge {
 
 class FeatureCsvWriter {
-public:
-    static void Write(const std::string& path,
-                      const std::vector<FeatureRow>& rows);
+  public:
+    static void Write(const std::string &path, const std::vector<FeatureRow> &rows);
 };
 
-}  // namespace bookforge
+} // namespace bookforge

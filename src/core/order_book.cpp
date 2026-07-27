@@ -2,7 +2,7 @@
 
 namespace bookforge {
 
-bool OrderBook::AddOrder(const Order& order) {
+bool OrderBook::AddOrder(const Order &order) {
     if (order_index_.find(order.id) != order_index_.end()) {
         return false;
     }
@@ -156,9 +156,7 @@ bool OrderBook::ReduceOrderQuantity(std::uint64_t order_id, std::uint32_t new_qu
     return level_it->second.ReduceOrderQuantity(order_it, new_quantity);
 }
 
-bool OrderBook::ReplaceOrder(std::uint64_t order_id,
-                             double new_price,
-                             std::uint32_t new_quantity,
+bool OrderBook::ReplaceOrder(std::uint64_t order_id, double new_price, std::uint32_t new_quantity,
                              std::uint64_t new_timestamp) {
     if (new_quantity == 0) {
         return false;
@@ -287,7 +285,7 @@ std::vector<std::pair<double, std::uint32_t>> OrderBook::GetBidDepth(std::size_t
     depth.reserve(levels);
 
     std::size_t count = 0;
-    for (const auto& [price, level] : bids_) {
+    for (const auto &[price, level] : bids_) {
         if (count >= levels) {
             break;
         }
@@ -303,7 +301,7 @@ std::vector<std::pair<double, std::uint32_t>> OrderBook::GetAskDepth(std::size_t
     depth.reserve(levels);
 
     std::size_t count = 0;
-    for (const auto& [price, level] : asks_) {
+    for (const auto &[price, level] : asks_) {
         if (count >= levels) {
             break;
         }
@@ -314,4 +312,4 @@ std::vector<std::pair<double, std::uint32_t>> OrderBook::GetAskDepth(std::size_t
     return depth;
 }
 
-}  // namespace bookforge
+} // namespace bookforge

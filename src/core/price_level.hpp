@@ -9,13 +9,13 @@
 namespace bookforge {
 
 class PriceLevel {
-public:
+  public:
     using OrderList = std::list<Order>;
     using Iterator = OrderList::iterator;
 
     explicit PriceLevel(double price = 0.0);
 
-    Iterator AddOrder(const Order& order);
+    Iterator AddOrder(const Order &order);
     void RemoveOrder(Iterator it);
     std::optional<Order> PopFrontOrder();
     bool ReduceFrontOrder(std::uint32_t quantity);
@@ -27,9 +27,9 @@ public:
     [[nodiscard]] bool Empty() const;
     [[nodiscard]] std::size_t OrderCount() const;
 
-private:
+  private:
     double price_;
     OrderList orders_;
 };
 
-}  // namespace bookforge
+} // namespace bookforge

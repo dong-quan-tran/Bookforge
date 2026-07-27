@@ -4,9 +4,8 @@ namespace bookforge {
 
 namespace {
 
-bool IsCrossingLimit(const Order& order,
-                     const std::optional<double>& best_bid,
-                     const std::optional<double>& best_ask) {
+bool IsCrossingLimit(const Order &order, const std::optional<double> &best_bid,
+                     const std::optional<double> &best_ask) {
     if (order.side == Side::Buy) {
         if (!best_ask.has_value()) {
             return false;
@@ -20,17 +19,13 @@ bool IsCrossingLimit(const Order& order,
     return order.price <= *best_bid;
 }
 
-}  // namespace
+} // namespace
 
-MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
+MatchResult MatchingEngine::MatchLimitOrder(const Order &incoming) {
     MatchResult result{};
     std::uint32_t remaining = incoming.quantity;
 
-    LogEvent(EngineEventType::Accepted,
-             incoming.id,
-             0,
-             incoming.price,
-             incoming.quantity,
+    LogEvent(EngineEventType::Accepted, incoming.id, 0, incoming.price, incoming.quantity,
              incoming.timestamp);
 
     while (remaining > 0) {
@@ -47,16 +42,11 @@ MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
                 break;
             }
 
-            if (incoming.participant_id != 0 &&
-                incoming.participant_id == maker->participant_id) {
+            if (incoming.participant_id != 0 && incoming.participant_id == maker->participant_id) {
                 if (incoming.stp == SelfTradePrevention::CancelNewest) {
                     result.remaining_quantity = incoming.quantity;
-                    LogEvent(EngineEventType::Rejected,
-                             incoming.id,
-                             maker->id,
-                             incoming.price,
-                             incoming.quantity,
-                             incoming.timestamp);
+                    LogEvent(EngineEventType::Rejected, incoming.id, maker->id, incoming.price,
+                             incoming.quantity, incoming.timestamp);
                     return result;
                 }
 
@@ -65,12 +55,8 @@ MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
                     if (!canceled) {
                         break;
                     }
-                    LogEvent(EngineEventType::Canceled,
-                             maker->id,
-                             incoming.id,
-                             maker->price,
-                             maker->quantity,
-                             incoming.timestamp);
+                    LogEvent(EngineEventType::Canceled, maker->id, incoming.id, maker->price,
+                             maker->quantity, incoming.timestamp);
                     continue;
                 }
             }
@@ -78,21 +64,11 @@ MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
             const std::uint32_t executed_qty =
                 remaining <= maker->quantity ? remaining : maker->quantity;
 
-            result.trades.push_back(Trade{
-                incoming.id,
-                maker->id,
-                Side::Buy,
-                maker->price,
-                executed_qty,
-                incoming.timestamp
-            });
+            result.trades.push_back(Trade{incoming.id, maker->id, Side::Buy, maker->price,
+                                          executed_qty, incoming.timestamp});
 
-            LogEvent(EngineEventType::TradeExecuted,
-                     incoming.id,
-                     maker->id,
-                     maker->price,
-                     executed_qty,
-                     incoming.timestamp);
+            LogEvent(EngineEventType::TradeExecuted, incoming.id, maker->id, maker->price,
+                     executed_qty, incoming.timestamp);
 
             bool ok = book_.ExecuteTopOrder(Side::Sell, maker->price, executed_qty);
             if (!ok) {
@@ -106,16 +82,11 @@ MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
                 break;
             }
 
-            if (incoming.participant_id != 0 &&
-                incoming.participant_id == maker->participant_id) {
+            if (incoming.participant_id != 0 && incoming.participant_id == maker->participant_id) {
                 if (incoming.stp == SelfTradePrevention::CancelNewest) {
                     result.remaining_quantity = incoming.quantity;
-                    LogEvent(EngineEventType::Rejected,
-                             incoming.id,
-                             maker->id,
-                             incoming.price,
-                             incoming.quantity,
-                             incoming.timestamp);
+                    LogEvent(EngineEventType::Rejected, incoming.id, maker->id, incoming.price,
+                             incoming.quantity, incoming.timestamp);
                     return result;
                 }
 
@@ -124,12 +95,8 @@ MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
                     if (!canceled) {
                         break;
                     }
-                    LogEvent(EngineEventType::Canceled,
-                             maker->id,
-                             incoming.id,
-                             maker->price,
-                             maker->quantity,
-                             incoming.timestamp);
+                    LogEvent(EngineEventType::Canceled, maker->id, incoming.id, maker->price,
+                             maker->quantity, incoming.timestamp);
                     continue;
                 }
             }
@@ -137,21 +104,11 @@ MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
             const std::uint32_t executed_qty =
                 remaining <= maker->quantity ? remaining : maker->quantity;
 
-            result.trades.push_back(Trade{
-                incoming.id,
-                maker->id,
-                Side::Sell,
-                maker->price,
-                executed_qty,
-                incoming.timestamp
-            });
+            result.trades.push_back(Trade{incoming.id, maker->id, Side::Sell, maker->price,
+                                          executed_qty, incoming.timestamp});
 
-            LogEvent(EngineEventType::TradeExecuted,
-                     incoming.id,
-                     maker->id,
-                     maker->price,
-                     executed_qty,
-                     incoming.timestamp);
+            LogEvent(EngineEventType::TradeExecuted, incoming.id, maker->id, maker->price,
+                     executed_qty, incoming.timestamp);
 
             bool ok = book_.ExecuteTopOrder(Side::Buy, maker->price, executed_qty);
             if (!ok) {
@@ -167,19 +124,11 @@ MatchResult MatchingEngine::MatchLimitOrder(const Order& incoming) {
         resting.quantity = remaining;
 
         if (book_.AddOrder(resting)) {
-            LogEvent(EngineEventType::Rested,
-                     resting.id,
-                     0,
-                     resting.price,
-                     resting.quantity,
+            LogEvent(EngineEventType::Rested, resting.id, 0, resting.price, resting.quantity,
                      resting.timestamp);
             result.remaining_quantity = 0;
         } else {
-            LogEvent(EngineEventType::Rejected,
-                     resting.id,
-                     0,
-                     resting.price,
-                     resting.quantity,
+            LogEvent(EngineEventType::Rejected, resting.id, 0, resting.price, resting.quantity,
                      resting.timestamp);
             result.remaining_quantity = remaining;
         }
@@ -241,20 +190,11 @@ TopOfBookSnapshot MatchingEngine::CaptureTopOfBook() const {
     return s;
 }
 
-void MatchingEngine::LogEvent(EngineEventType type,
-                              std::uint64_t order_id,
-                              std::uint64_t related_order_id,
-                              double price,
-                              std::uint32_t quantity,
+void MatchingEngine::LogEvent(EngineEventType type, std::uint64_t order_id,
+                              std::uint64_t related_order_id, double price, std::uint32_t quantity,
                               std::uint64_t timestamp) {
-    event_log_.push_back(EngineEventLogEntry{
-        type,
-        order_id,
-        related_order_id,
-        price,
-        quantity,
-        timestamp
-    });
+    event_log_.push_back(
+        EngineEventLogEntry{type, order_id, related_order_id, price, quantity, timestamp});
 }
 
-}  // namespace bookforge
+} // namespace bookforge

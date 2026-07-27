@@ -8,9 +8,8 @@
 namespace bookforge {
 
 class RollingFeatureBuilder {
-public:
-    static void AddRollingContextFeatures(std::vector<FeatureRow>& rows,
-                                          std::size_t window);
+  public:
+    static void AddRollingContextFeatures(std::vector<FeatureRow> &rows, std::size_t window);
 };
 
-}  // namespace bookforge
+} // namespace bookforge

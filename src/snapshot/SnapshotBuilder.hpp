@@ -22,10 +22,9 @@ struct SnapshotBuildContext {
 };
 
 class SnapshotBuilder {
-public:
-    [[nodiscard]] static BookSnapshot Build(const MatchingEngine& engine,
-                                            const SnapshotBuildContext& ctx,
-                                            std::size_t depth_levels);
+  public:
+    [[nodiscard]] static BookSnapshot
+    Build(const MatchingEngine &engine, const SnapshotBuildContext &ctx, std::size_t depth_levels);
 };
 
-}  // namespace bookforge
+} // namespace bookforge

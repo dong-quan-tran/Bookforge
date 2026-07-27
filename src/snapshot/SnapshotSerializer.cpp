@@ -7,7 +7,7 @@
 namespace bookforge {
 namespace {
 
-std::string OptionalDoubleToCell(const std::optional<double>& value) {
+std::string OptionalDoubleToCell(const std::optional<double> &value) {
     if (!value.has_value()) {
         return "";
     }
@@ -16,10 +16,10 @@ std::string OptionalDoubleToCell(const std::optional<double>& value) {
     return oss.str();
 }
 
-}  // namespace
+} // namespace
 
-void SnapshotSerializer::WriteCsv(const std::string& path,
-                                  const std::vector<BookSnapshot>& snapshots,
+void SnapshotSerializer::WriteCsv(const std::string &path,
+                                  const std::vector<BookSnapshot> &snapshots,
                                   std::size_t depth_levels) {
     std::ofstream out(path);
     if (!out.is_open()) {
@@ -27,7 +27,7 @@ void SnapshotSerializer::WriteCsv(const std::string& path,
     }
 
     out << Header(depth_levels) << '\n';
-    for (const auto& snapshot : snapshots) {
+    for (const auto &snapshot : snapshots) {
         out << Row(snapshot, depth_levels) << '\n';
     }
 }
@@ -57,25 +57,19 @@ std::string SnapshotSerializer::Header(std::size_t depth_levels) {
     return oss.str();
 }
 
-std::string SnapshotSerializer::Row(const BookSnapshot& snapshot, std::size_t depth_levels) {
+std::string SnapshotSerializer::Row(const BookSnapshot &snapshot, std::size_t depth_levels) {
     std::ostringstream oss;
-    oss << snapshot.symbol
-        << ',' << snapshot.replay_event_index
-        << ',' << snapshot.replay_timestamp_ns
-        << ',' << snapshot.total_events_seen
-        << ',' << snapshot.submitted_orders
-        << ',' << snapshot.rejected_events
-        << ',' << snapshot.ignored_events
-        << ',' << snapshot.generated_trades
-        << ',' << OptionalDoubleToCell(snapshot.best_bid)
-        << ',' << OptionalDoubleToCell(snapshot.best_ask)
-        << ',' << OptionalDoubleToCell(snapshot.mid_price)
-        << ',' << OptionalDoubleToCell(snapshot.spread);
+    oss << snapshot.symbol << ',' << snapshot.replay_event_index << ','
+        << snapshot.replay_timestamp_ns << ',' << snapshot.total_events_seen << ','
+        << snapshot.submitted_orders << ',' << snapshot.rejected_events << ','
+        << snapshot.ignored_events << ',' << snapshot.generated_trades << ','
+        << OptionalDoubleToCell(snapshot.best_bid) << ',' << OptionalDoubleToCell(snapshot.best_ask)
+        << ',' << OptionalDoubleToCell(snapshot.mid_price) << ','
+        << OptionalDoubleToCell(snapshot.spread);
 
     for (std::size_t i = 0; i < depth_levels; ++i) {
         if (i < snapshot.bids.size()) {
-            oss << ',' << snapshot.bids[i].price
-                << ',' << snapshot.bids[i].quantity;
+            oss << ',' << snapshot.bids[i].price << ',' << snapshot.bids[i].quantity;
         } else {
             oss << ',' << "" << ',' << "";
         }
@@ -83,8 +77,7 @@ std::string SnapshotSerializer::Row(const BookSnapshot& snapshot, std::size_t de
 
     for (std::size_t i = 0; i < depth_levels; ++i) {
         if (i < snapshot.asks.size()) {
-            oss << ',' << snapshot.asks[i].price
-                << ',' << snapshot.asks[i].quantity;
+            oss << ',' << snapshot.asks[i].price << ',' << snapshot.asks[i].quantity;
         } else {
             oss << ',' << "" << ',' << "";
         }
@@ -93,4 +86,4 @@ std::string SnapshotSerializer::Row(const BookSnapshot& snapshot, std::size_t de
     return oss.str();
 }
 
-}  // namespace bookforge
+} // namespace bookforge

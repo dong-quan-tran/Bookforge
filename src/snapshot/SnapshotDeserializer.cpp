@@ -8,30 +8,30 @@
 namespace bookforge {
 namespace {
 
-std::optional<double> ParseOptionalDouble(const std::string& s) {
+std::optional<double> ParseOptionalDouble(const std::string &s) {
     if (s.empty()) {
         return std::nullopt;
     }
     return std::stod(s);
 }
 
-std::uint64_t ParseUint64(const std::string& s, const std::string& field_name) {
+std::uint64_t ParseUint64(const std::string &s, const std::string &field_name) {
     if (s.empty()) {
         throw std::runtime_error("missing uint64 field: " + field_name);
     }
     return static_cast<std::uint64_t>(std::stoull(s));
 }
 
-std::uint32_t ParseUint32(const std::string& s, const std::string& field_name) {
+std::uint32_t ParseUint32(const std::string &s, const std::string &field_name) {
     if (s.empty()) {
         throw std::runtime_error("missing uint32 field: " + field_name);
     }
     return static_cast<std::uint32_t>(std::stoul(s));
 }
 
-}  // namespace
+} // namespace
 
-std::vector<BookSnapshot> SnapshotDeserializer::ReadCsv(const std::string& path,
+std::vector<BookSnapshot> SnapshotDeserializer::ReadCsv(const std::string &path,
                                                         std::size_t depth_levels) {
     std::ifstream in(path);
     if (!in.is_open()) {
@@ -57,7 +57,7 @@ std::vector<BookSnapshot> SnapshotDeserializer::ReadCsv(const std::string& path,
     return snapshots;
 }
 
-std::vector<std::string> SnapshotDeserializer::SplitCsvLine(const std::string& line) {
+std::vector<std::string> SnapshotDeserializer::SplitCsvLine(const std::string &line) {
     std::vector<std::string> cells;
     std::stringstream ss(line);
     std::string cell;
@@ -75,19 +75,9 @@ std::vector<std::string> SnapshotDeserializer::SplitCsvLine(const std::string& l
 
 std::vector<std::string> SnapshotDeserializer::ExpectedHeader(std::size_t depth_levels) {
     std::vector<std::string> header = {
-        "symbol",
-        "replay_event_index",
-        "replay_timestamp_ns",
-        "total_events_seen",
-        "submitted_orders",
-        "rejected_events",
-        "ignored_events",
-        "generated_trades",
-        "best_bid",
-        "best_ask",
-        "mid_price",
-        "spread"
-    };
+        "symbol",           "replay_event_index", "replay_timestamp_ns", "total_events_seen",
+        "submitted_orders", "rejected_events",    "ignored_events",      "generated_trades",
+        "best_bid",         "best_ask",           "mid_price",           "spread"};
 
     for (std::size_t i = 1; i <= depth_levels; ++i) {
         header.push_back("bid_px_" + std::to_string(i));
@@ -102,7 +92,7 @@ std::vector<std::string> SnapshotDeserializer::ExpectedHeader(std::size_t depth_
     return header;
 }
 
-void SnapshotDeserializer::ValidateHeader(const std::vector<std::string>& actual,
+void SnapshotDeserializer::ValidateHeader(const std::vector<std::string> &actual,
                                           std::size_t depth_levels) {
     const auto expected = ExpectedHeader(depth_levels);
     if (actual.size() != expected.size()) {
@@ -111,13 +101,12 @@ void SnapshotDeserializer::ValidateHeader(const std::vector<std::string>& actual
 
     for (std::size_t i = 0; i < expected.size(); ++i) {
         if (actual[i] != expected[i]) {
-            throw std::runtime_error("snapshot CSV header mismatch at column " +
-                                     std::to_string(i));
+            throw std::runtime_error("snapshot CSV header mismatch at column " + std::to_string(i));
         }
     }
 }
 
-BookSnapshot SnapshotDeserializer::ParseRow(const std::vector<std::string>& cells,
+BookSnapshot SnapshotDeserializer::ParseRow(const std::vector<std::string> &cells,
                                             std::size_t depth_levels) {
     const std::size_t expected_cells = 12 + (2 * depth_levels) + (2 * depth_levels);
     if (cells.size() != expected_cells) {
@@ -141,32 +130,30 @@ BookSnapshot SnapshotDeserializer::ParseRow(const std::vector<std::string>& cell
     snapshot.spread = ParseOptionalDouble(cells[i++]);
 
     for (std::size_t level = 0; level < depth_levels; ++level) {
-        const std::string& px = cells[i++];
-        const std::string& qty = cells[i++];
+        const std::string &px = cells[i++];
+        const std::string &qty = cells[i++];
 
         if (!px.empty() || !qty.empty()) {
             if (px.empty() || qty.empty()) {
                 throw std::runtime_error("incomplete bid depth cell pair");
             }
-            snapshot.bids.push_back(
-                DepthLevelSnapshot{std::stod(px), ParseUint32(qty, "bid_qty")});
+            snapshot.bids.push_back(DepthLevelSnapshot{std::stod(px), ParseUint32(qty, "bid_qty")});
         }
     }
 
     for (std::size_t level = 0; level < depth_levels; ++level) {
-        const std::string& px = cells[i++];
-        const std::string& qty = cells[i++];
+        const std::string &px = cells[i++];
+        const std::string &qty = cells[i++];
 
         if (!px.empty() || !qty.empty()) {
             if (px.empty() || qty.empty()) {
                 throw std::runtime_error("incomplete ask depth cell pair");
             }
-            snapshot.asks.push_back(
-                DepthLevelSnapshot{std::stod(px), ParseUint32(qty, "ask_qty")});
+            snapshot.asks.push_back(DepthLevelSnapshot{std::stod(px), ParseUint32(qty, "ask_qty")});
         }
     }
 
     return snapshot;
 }
 
-}  // namespace bookforge
+} // namespace bookforge

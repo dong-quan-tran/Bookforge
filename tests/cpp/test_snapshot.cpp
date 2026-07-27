@@ -8,21 +8,17 @@
 #include "core/matching_engine.hpp"
 #include "core/order.hpp"
 #include "snapshot/BookSnapshot.hpp"
-#include "snapshot/SnapshotBuilder.hpp"
-#include "snapshot/SnapshotComparator.hpp"
-#include "snapshot/SnapshotSerializer.hpp"
-#include "snapshot/SnapshotDeserializer.hpp"
 #include "snapshot/SnapshotBinaryDeserializer.hpp"
 #include "snapshot/SnapshotBinarySerializer.hpp"
+#include "snapshot/SnapshotBuilder.hpp"
+#include "snapshot/SnapshotComparator.hpp"
+#include "snapshot/SnapshotDeserializer.hpp"
+#include "snapshot/SnapshotSerializer.hpp"
 
 namespace bookforge {
 namespace {
 
-Order MakeOrder(std::uint64_t id,
-                Side side,
-                double price,
-                std::uint32_t qty,
-                std::uint64_t ts,
+Order MakeOrder(std::uint64_t id, Side side, double price, std::uint32_t qty, std::uint64_t ts,
                 std::uint64_t participant = 0,
                 SelfTradePrevention stp = SelfTradePrevention::None) {
     Order o{};
@@ -36,8 +32,7 @@ Order MakeOrder(std::uint64_t id,
     return o;
 }
 
-SnapshotBuildContext MakeContext(std::uint64_t event_index,
-                                 std::uint64_t ts) {
+SnapshotBuildContext MakeContext(std::uint64_t event_index, std::uint64_t ts) {
     SnapshotBuildContext ctx{};
     ctx.symbol = "TEST";
     ctx.replay_event_index = event_index;
@@ -55,8 +50,7 @@ TEST(SnapshotTest, BuilderCapturesTopOfBookFields) {
     engine.MatchLimitOrder(MakeOrder(1, Side::Buy, 100.0, 10, 1));
     engine.MatchLimitOrder(MakeOrder(2, Side::Sell, 102.0, 8, 2));
 
-    const BookSnapshot snapshot =
-        SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
+    const BookSnapshot snapshot = SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
 
     ASSERT_TRUE(snapshot.best_bid.has_value());
     ASSERT_TRUE(snapshot.best_ask.has_value());
@@ -77,8 +71,7 @@ TEST(SnapshotTest, BuilderExportsTopNDepth) {
     engine.MatchLimitOrder(MakeOrder(4, Side::Sell, 101.0, 8, 4));
     engine.MatchLimitOrder(MakeOrder(5, Side::Sell, 102.0, 6, 5));
 
-    const BookSnapshot snapshot =
-        SnapshotBuilder::Build(engine, MakeContext(5, 5), 2);
+    const BookSnapshot snapshot = SnapshotBuilder::Build(engine, MakeContext(5, 5), 2);
 
     ASSERT_EQ(snapshot.bids.size(), 2u);
     ASSERT_EQ(snapshot.asks.size(), 2u);
@@ -99,8 +92,7 @@ TEST(SnapshotTest, SerializerWritesStableCsvShape) {
     engine.MatchLimitOrder(MakeOrder(1, Side::Buy, 100.0, 10, 1));
     engine.MatchLimitOrder(MakeOrder(2, Side::Sell, 101.0, 4, 2));
 
-    const BookSnapshot snapshot =
-        SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
+    const BookSnapshot snapshot = SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
 
     const std::filesystem::path out_path =
         std::filesystem::temp_directory_path() / "bookforge_snapshot_test.csv";
@@ -130,10 +122,8 @@ TEST(SnapshotTest, ComparatorReportsEqualityForIdenticalSnapshots) {
     engine.MatchLimitOrder(MakeOrder(1, Side::Buy, 100.0, 10, 1));
     engine.MatchLimitOrder(MakeOrder(2, Side::Sell, 102.0, 8, 2));
 
-    const BookSnapshot a =
-        SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
-    const BookSnapshot b =
-        SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
+    const BookSnapshot a = SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
+    const BookSnapshot b = SnapshotBuilder::Build(engine, MakeContext(2, 2), 2);
 
     const auto result = SnapshotComparator::Compare(a, b);
     EXPECT_TRUE(result.equal);
@@ -191,7 +181,6 @@ TEST(SnapshotTest, ReplayStyleCheckpointValidationMatchesExpectedState) {
     EXPECT_TRUE(result.equal) << result.message;
 }
 
-
 TEST(SnapshotTest, CsvRoundTripPreservesSnapshotContent) {
     MatchingEngine engine;
     engine.MatchLimitOrder(MakeOrder(1, Side::Buy, 100.0, 10, 1));
@@ -233,9 +222,7 @@ TEST(SnapshotTest, DeserializerRejectsInvalidHeader) {
         out << "TEST,1,1,1,1,0,0,0,100,101,100.5,1,100,10,99,7,101,4,102,6\n";
     }
 
-    EXPECT_THROW(
-        (void)SnapshotDeserializer::ReadCsv(out_path.string(), 2),
-        std::runtime_error);
+    EXPECT_THROW((void)SnapshotDeserializer::ReadCsv(out_path.string(), 2), std::runtime_error);
 }
 
 TEST(SnapshotTest, DeserializerPreservesEmptyOptionalTopOfBookFields) {
@@ -245,7 +232,9 @@ TEST(SnapshotTest, DeserializerPreservesEmptyOptionalTopOfBookFields) {
     {
         std::ofstream out(out_path);
         ASSERT_TRUE(out.is_open());
-        out << "symbol,replay_event_index,replay_timestamp_ns,total_events_seen,submitted_orders,rejected_events,ignored_events,generated_trades,best_bid,best_ask,mid_price,spread,bid_px_1,bid_qty_1,ask_px_1,ask_qty_1\n";
+        out << "symbol,replay_event_index,replay_timestamp_ns,total_events_seen,submitted_orders,"
+               "rejected_events,ignored_events,generated_trades,best_bid,best_ask,mid_price,spread,"
+               "bid_px_1,bid_qty_1,ask_px_1,ask_qty_1\n";
         out << "TEST,1,1,1,1,0,0,0,,,,,100,5,101,6\n";
     }
 
@@ -306,9 +295,7 @@ TEST(SnapshotTest, BinaryDeserializerRejectsInvalidMagic) {
         out.write(bad_magic, sizeof(bad_magic));
     }
 
-    EXPECT_THROW(
-        (void)SnapshotBinaryDeserializer::Read(out_path.string(), 2),
-        std::runtime_error);
+    EXPECT_THROW((void)SnapshotBinaryDeserializer::Read(out_path.string(), 2), std::runtime_error);
 }
 
 TEST(SnapshotTest, BinaryDeserializerRejectsUnsupportedVersion) {
@@ -327,15 +314,13 @@ TEST(SnapshotTest, BinaryDeserializerRejectsUnsupportedVersion) {
         const unsigned char depth[4] = {2, 0, 0, 0};
         const unsigned char count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-        out.write(reinterpret_cast<const char*>(version), sizeof(version));
-        out.write(reinterpret_cast<const char*>(reserved), sizeof(reserved));
-        out.write(reinterpret_cast<const char*>(depth), sizeof(depth));
-        out.write(reinterpret_cast<const char*>(count), sizeof(count));
+        out.write(reinterpret_cast<const char *>(version), sizeof(version));
+        out.write(reinterpret_cast<const char *>(reserved), sizeof(reserved));
+        out.write(reinterpret_cast<const char *>(depth), sizeof(depth));
+        out.write(reinterpret_cast<const char *>(count), sizeof(count));
     }
 
-    EXPECT_THROW(
-        (void)SnapshotBinaryDeserializer::Read(out_path.string(), 2),
-        std::runtime_error);
+    EXPECT_THROW((void)SnapshotBinaryDeserializer::Read(out_path.string(), 2), std::runtime_error);
 }
 
 TEST(SnapshotTest, BinaryDeserializerRejectsDepthMismatch) {
@@ -359,10 +344,8 @@ TEST(SnapshotTest, BinaryDeserializerRejectsDepthMismatch) {
 
     SnapshotBinarySerializer::Write(out_path.string(), {snapshot}, 1);
 
-    EXPECT_THROW(
-        (void)SnapshotBinaryDeserializer::Read(out_path.string(), 2),
-        std::runtime_error);
+    EXPECT_THROW((void)SnapshotBinaryDeserializer::Read(out_path.string(), 2), std::runtime_error);
 }
 
-}  // namespace
-}  // namespace bookforge
+} // namespace
+} // namespace bookforge

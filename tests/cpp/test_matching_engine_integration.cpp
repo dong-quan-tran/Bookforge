@@ -6,11 +6,7 @@
 namespace bookforge {
 namespace {
 
-Order MakeOrder(std::uint64_t id,
-                Side side,
-                double price,
-                std::uint32_t qty,
-                std::uint64_t ts,
+Order MakeOrder(std::uint64_t id, Side side, double price, std::uint32_t qty, std::uint64_t ts,
                 std::uint64_t participant = 0,
                 SelfTradePrevention stp = SelfTradePrevention::None) {
     Order o{};
@@ -151,7 +147,7 @@ TEST(MatchingEngineIntegrationTest, EventLogCapturesAcceptTradeRestAndCancelFlow
     engine.MatchLimitOrder(MakeOrder(2, Side::Buy, 101.0, 4, 2));
     engine.CancelOrder(1);
 
-    const auto& log = engine.EventLog();
+    const auto &log = engine.EventLog();
     ASSERT_GE(log.size(), 4u);
 
     EXPECT_EQ(log[0].type, EngineEventType::Accepted);
@@ -159,5 +155,5 @@ TEST(MatchingEngineIntegrationTest, EventLogCapturesAcceptTradeRestAndCancelFlow
     EXPECT_EQ(log[2].type, EngineEventType::Accepted);
 }
 
-}  // namespace
-}  // namespace bookforge
+} // namespace
+} // namespace bookforge

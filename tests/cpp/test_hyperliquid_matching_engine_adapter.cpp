@@ -10,14 +10,8 @@ using namespace bookforge;
 
 namespace {
 
-ExternalOrderEvent MakeEvent(
-    EventType eventType,
-    bool isAsk,
-    double price,
-    double size,
-    int statusId = 1,
-    const std::string& statusText = "open"
-) {
+ExternalOrderEvent MakeEvent(EventType eventType, bool isAsk, double price, double size,
+                             int statusId = 1, const std::string &statusText = "open") {
     ExternalOrderEvent ev{};
     ev.ts = std::chrono::nanoseconds{0};
     ev.price = price;
@@ -29,7 +23,7 @@ ExternalOrderEvent MakeEvent(
     return ev;
 }
 
-}  // namespace
+} // namespace
 
 TEST(HyperliquidMatchingEngineAdapterTest, NewBidEventRestsInBook) {
     MatchingEngine engine;
@@ -37,7 +31,7 @@ TEST(HyperliquidMatchingEngineAdapterTest, NewBidEventRestsInBook) {
 
     adapter.OnEvent(MakeEvent(EventType::New, false, 100.00, 0.01000));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 1u);
     EXPECT_EQ(stats.newCount, 1u);
     EXPECT_EQ(stats.submittedOrders, 1u);
@@ -59,7 +53,7 @@ TEST(HyperliquidMatchingEngineAdapterTest, NewAskEventRestsInBook) {
 
     adapter.OnEvent(MakeEvent(EventType::New, true, 100.50, 0.02000));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 1u);
     EXPECT_EQ(stats.newCount, 1u);
     EXPECT_EQ(stats.submittedOrders, 1u);
@@ -81,13 +75,13 @@ TEST(HyperliquidMatchingEngineAdapterTest, CrossingNewEventsGenerateTrade) {
     adapter.OnEvent(MakeEvent(EventType::New, true, 100.50, 0.01000));
     adapter.OnEvent(MakeEvent(EventType::New, false, 101.00, 0.01000));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 2u);
     EXPECT_EQ(stats.newCount, 2u);
     EXPECT_EQ(stats.submittedOrders, 2u);
     EXPECT_EQ(stats.generatedTrades, 1u);
 
-    const auto& trades = adapter.Trades();
+    const auto &trades = adapter.Trades();
     ASSERT_EQ(trades.size(), 1u);
     EXPECT_EQ(trades[0].side, Side::Buy);
     EXPECT_DOUBLE_EQ(trades[0].price, 100.50);
@@ -98,16 +92,9 @@ TEST(HyperliquidMatchingEngineAdapterTest, RejectEventDoesNotTouchBook) {
     MatchingEngine engine;
     HyperliquidMatchingEngineAdapter adapter(engine);
 
-    adapter.OnEvent(MakeEvent(
-        EventType::Reject,
-        false,
-        100.00,
-        0.01000,
-        3,
-        "perpMarginRejected"
-    ));
+    adapter.OnEvent(MakeEvent(EventType::Reject, false, 100.00, 0.01000, 3, "perpMarginRejected"));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 1u);
     EXPECT_EQ(stats.rejectCount, 1u);
     EXPECT_EQ(stats.submittedOrders, 0u);
@@ -122,16 +109,9 @@ TEST(HyperliquidMatchingEngineAdapterTest, CancelEventIsCountedButIgnoredForNow)
     MatchingEngine engine;
     HyperliquidMatchingEngineAdapter adapter(engine);
 
-    adapter.OnEvent(MakeEvent(
-        EventType::Cancel,
-        true,
-        100.50,
-        0.01000,
-        2,
-        "canceled"
-    ));
+    adapter.OnEvent(MakeEvent(EventType::Cancel, true, 100.50, 0.01000, 2, "canceled"));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 1u);
     EXPECT_EQ(stats.cancelCount, 1u);
     EXPECT_EQ(stats.submittedOrders, 0u);
@@ -145,16 +125,9 @@ TEST(HyperliquidMatchingEngineAdapterTest, FillEventIsCountedButIgnoredForNow) {
     MatchingEngine engine;
     HyperliquidMatchingEngineAdapter adapter(engine);
 
-    adapter.OnEvent(MakeEvent(
-        EventType::Fill,
-        false,
-        101.00,
-        0.01500,
-        5,
-        "filled"
-    ));
+    adapter.OnEvent(MakeEvent(EventType::Fill, false, 101.00, 0.01500, 5, "filled"));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 1u);
     EXPECT_EQ(stats.fillCount, 1u);
     EXPECT_EQ(stats.submittedOrders, 0u);
@@ -170,7 +143,7 @@ TEST(HyperliquidMatchingEngineAdapterTest, TinyPositiveSizeRoundsUpToMinimumQuan
 
     adapter.OnEvent(MakeEvent(EventType::New, false, 100.00, 0.000001));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.newCount, 1u);
     EXPECT_EQ(stats.submittedOrders, 1u);
 
@@ -185,7 +158,7 @@ TEST(HyperliquidMatchingEngineAdapterTest, ZeroSizeEventIsIgnoredAfterClassifica
 
     adapter.OnEvent(MakeEvent(EventType::New, false, 100.00, 0.0));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 1u);
     EXPECT_EQ(stats.newCount, 1u);
     EXPECT_EQ(stats.submittedOrders, 0u);
@@ -204,7 +177,7 @@ TEST(HyperliquidMatchingEngineAdapterTest, MultipleEventsProduceSaneFinalBookSta
     adapter.OnEvent(MakeEvent(EventType::New, true, 101.00, 0.01500));
     adapter.OnEvent(MakeEvent(EventType::Reject, true, 100.75, 0.01000, 3, "perpMarginRejected"));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 4u);
     EXPECT_EQ(stats.newCount, 3u);
     EXPECT_EQ(stats.rejectCount, 1u);

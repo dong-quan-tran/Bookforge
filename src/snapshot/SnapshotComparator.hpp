@@ -12,9 +12,9 @@ struct SnapshotComparisonResult {
 };
 
 class SnapshotComparator {
-public:
-    [[nodiscard]] static SnapshotComparisonResult Compare(const BookSnapshot& lhs,
-                                                          const BookSnapshot& rhs);
+  public:
+    [[nodiscard]] static SnapshotComparisonResult Compare(const BookSnapshot &lhs,
+                                                          const BookSnapshot &rhs);
 };
 
-}  // namespace bookforge
+} // namespace bookforge

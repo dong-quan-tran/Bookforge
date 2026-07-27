@@ -34,4 +34,4 @@ struct BookSnapshot {
     std::vector<DepthLevelSnapshot> asks;
 };
 
-}  // namespace bookforge
+} // namespace bookforge

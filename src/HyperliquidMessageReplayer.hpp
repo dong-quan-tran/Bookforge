@@ -10,16 +10,15 @@
 namespace bookforge {
 
 class HyperliquidMessageReplayer {
-public:
-    HyperliquidMessageReplayer(
-        std::string csvPath
-        /*, OrderBook& book, MatchingEngine& engine */
-    )
+  public:
+    HyperliquidMessageReplayer(std::string csvPath
+                               /*, OrderBook& book, MatchingEngine& engine */
+                               )
         : reader_(std::move(csvPath)) {}
 
     void replay() {
         auto events = reader_.read_all();
-        for (const auto& ev : events) {
+        for (const auto &ev : events) {
             // TODO: call into your existing engine / book logic.
             // Example skeleton:
             //
@@ -45,7 +44,7 @@ public:
         }
     }
 
-private:
+  private:
     HyperliquidCsvReader reader_;
 };
 

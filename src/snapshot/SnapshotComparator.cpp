@@ -5,8 +5,7 @@
 namespace bookforge {
 namespace {
 
-bool OptionalDoubleEqual(const std::optional<double>& a,
-                         const std::optional<double>& b) {
+bool OptionalDoubleEqual(const std::optional<double> &a, const std::optional<double> &b) {
     if (a.has_value() != b.has_value()) {
         return false;
     }
@@ -16,14 +15,14 @@ bool OptionalDoubleEqual(const std::optional<double>& a,
     return *a == *b;
 }
 
-SnapshotComparisonResult Fail(const std::string& message) {
+SnapshotComparisonResult Fail(const std::string &message) {
     return SnapshotComparisonResult{false, message};
 }
 
-}  // namespace
+} // namespace
 
-SnapshotComparisonResult SnapshotComparator::Compare(const BookSnapshot& lhs,
-                                                     const BookSnapshot& rhs) {
+SnapshotComparisonResult SnapshotComparator::Compare(const BookSnapshot &lhs,
+                                                     const BookSnapshot &rhs) {
     if (lhs.symbol != rhs.symbol) {
         return Fail("symbol mismatch");
     }
@@ -88,4 +87,4 @@ SnapshotComparisonResult SnapshotComparator::Compare(const BookSnapshot& lhs,
     return SnapshotComparisonResult{true, ""};
 }
 
-}  // namespace bookforge
+} // namespace bookforge

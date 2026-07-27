@@ -5,14 +5,7 @@
 
 namespace bookforge {
 
-enum class EventType {
-    New,
-    Cancel,
-    Fill,
-    Reject,
-    Trigger,
-    Other
-};
+enum class EventType { New, Cancel, Fill, Reject, Trigger, Other };
 
 struct ExternalOrderEvent {
     std::chrono::nanoseconds ts;

@@ -9,13 +9,13 @@
 
 using namespace bookforge;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     try {
         ReplayConfig config;
         config.path = (argc > 1) ? argv[1] : "data/processed/hyperliquid_sample.csv";
         config.symbol = "BTCUSDT.P";
         config.source = ReplaySource::Hyperliquid;
-        config.max_events = 0;          // 0 = full file
+        config.max_events = 0; // 0 = full file
         config.start_offset = 0;
         config.log_every_n = 500000;
         config.log_summary = true;
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
         ReplayRunner runner(config);
         runner.Run(adapter, events);
 
-        const auto& stats = adapter.Stats();
+        const auto &stats = adapter.Stats();
         std::cout << "Total events: " << stats.totalEvents << "\n"
                   << "New: " << stats.newCount << "\n"
                   << "Cancel: " << stats.cancelCount << "\n"
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
         }
 
         return 0;
-    } catch (const std::exception& ex) {
+    } catch (const std::exception &ex) {
         std::cerr << "Replay failed: " << ex.what() << "\n";
         return 1;
     }

@@ -7,7 +7,7 @@
 namespace bookforge {
 namespace {
 
-double Mean(const std::vector<double>& values) {
+double Mean(const std::vector<double> &values) {
     double sum = 0.0;
     for (double v : values) {
         sum += v;
@@ -15,9 +15,9 @@ double Mean(const std::vector<double>& values) {
     return values.empty() ? 0.0 : (sum / static_cast<double>(values.size()));
 }
 
-}  // namespace
+} // namespace
 
-void RollingFeatureBuilder::AddRollingContextFeatures(std::vector<FeatureRow>& rows,
+void RollingFeatureBuilder::AddRollingContextFeatures(std::vector<FeatureRow> &rows,
                                                       std::size_t window) {
     if (window == 0) {
         throw std::runtime_error("rolling feature window must be > 0");
@@ -34,7 +34,7 @@ void RollingFeatureBuilder::AddRollingContextFeatures(std::vector<FeatureRow>& r
         std::vector<double> one_step_mid_returns;
 
         for (std::size_t j = start; j <= i; ++j) {
-            const auto& row = rows[j];
+            const auto &row = rows[j];
 
             if (row.spread.has_value()) {
                 spreads.push_back(*row.spread);
@@ -56,12 +56,9 @@ void RollingFeatureBuilder::AddRollingContextFeatures(std::vector<FeatureRow>& r
                 abs_ofi_lNs.push_back(std::fabs(*row.ofi_lN));
             }
 
-            if (j > start &&
-                rows[j - 1].mid_price.has_value() &&
-                row.mid_price.has_value() &&
+            if (j > start && rows[j - 1].mid_price.has_value() && row.mid_price.has_value() &&
                 *rows[j - 1].mid_price > 0.0) {
-                const double r =
-                    (*row.mid_price / *rows[j - 1].mid_price) - 1.0;
+                const double r = (*row.mid_price / *rows[j - 1].mid_price) - 1.0;
                 one_step_mid_returns.push_back(r);
             }
         }
@@ -86,13 +83,9 @@ void RollingFeatureBuilder::AddRollingContextFeatures(std::vector<FeatureRow>& r
             rows[i].rolling_mean_abs_ofi_lN = Mean(abs_ofi_lNs);
         }
 
-        if (i >= start &&
-            rows[start].mid_price.has_value() &&
-            rows[i].mid_price.has_value() &&
-            *rows[start].mid_price > 0.0 &&
-            i > start) {
-            rows[i].rolling_mid_return =
-                (*rows[i].mid_price / *rows[start].mid_price) - 1.0;
+        if (i >= start && rows[start].mid_price.has_value() && rows[i].mid_price.has_value() &&
+            *rows[start].mid_price > 0.0 && i > start) {
+            rows[i].rolling_mid_return = (*rows[i].mid_price / *rows[start].mid_price) - 1.0;
         }
 
         if (!one_step_mid_returns.empty()) {
@@ -105,4 +98,4 @@ void RollingFeatureBuilder::AddRollingContextFeatures(std::vector<FeatureRow>& r
     }
 }
 
-}  // namespace bookforge
+} // namespace bookforge

@@ -3,21 +3,19 @@
 #include <vector>
 
 #include "ExternalOrderEvent.hpp"
-#include "ReplayConfig.hpp"
 #include "IReplayAdapter.hpp"
+#include "ReplayConfig.hpp"
 
 namespace bookforge {
 
 class ReplayRunner {
-public:
-    explicit ReplayRunner(const ReplayConfig& config)
-        : config_(config) {}
+  public:
+    explicit ReplayRunner(const ReplayConfig &config) : config_(config) {}
 
-    bool Run(IReplayAdapter& adapter,
-             const std::vector<ExternalOrderEvent>& events) const;
+    bool Run(IReplayAdapter &adapter, const std::vector<ExternalOrderEvent> &events) const;
 
-private:
+  private:
     ReplayConfig config_;
 };
 
-}  // namespace bookforge
+} // namespace bookforge

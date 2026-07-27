@@ -1,26 +1,23 @@
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <cmath>
 
 #include <gtest/gtest.h>
 
 #include "features/FeatureBuilder.hpp"
 #include "features/FeatureCsvWriter.hpp"
-#include "snapshot/BookSnapshot.hpp"
 #include "features/OfiFeatureBuilder.hpp"
 #include "features/RollingFeatureBuilder.hpp"
+#include "snapshot/BookSnapshot.hpp"
 
 namespace bookforge {
 namespace {
 
-BookSnapshot MakeSnapshot(std::uint64_t event_index,
-                          std::uint64_t ts_ns,
-                          std::optional<double> best_bid,
-                          std::optional<double> best_ask,
-                          std::optional<double> spread,
-                          std::optional<double> mid_price,
+BookSnapshot MakeSnapshot(std::uint64_t event_index, std::uint64_t ts_ns,
+                          std::optional<double> best_bid, std::optional<double> best_ask,
+                          std::optional<double> spread, std::optional<double> mid_price,
                           std::vector<DepthLevelSnapshot> bids,
                           std::vector<DepthLevelSnapshot> asks) {
     BookSnapshot s{};
@@ -38,20 +35,16 @@ BookSnapshot MakeSnapshot(std::uint64_t event_index,
     return s;
 }
 
-}  // namespace
+} // namespace
 
 TEST(FeatureBuilderTest, BuildsTopOfBookFieldsFromSnapshot) {
-    const BookSnapshot snapshot = MakeSnapshot(
-        10, 1000,
-        100.0, 101.0, 1.0, 100.5,
-        {{100.0, 12}, {99.0, 8}},
-        {{101.0, 6}, {102.0, 5}}
-    );
+    const BookSnapshot snapshot = MakeSnapshot(10, 1000, 100.0, 101.0, 1.0, 100.5,
+                                               {{100.0, 12}, {99.0, 8}}, {{101.0, 6}, {102.0, 5}});
 
     const auto rows = FeatureBuilder::BuildFromSnapshots({snapshot}, 2);
     ASSERT_EQ(rows.size(), 1u);
 
-    const auto& row = rows[0];
+    const auto &row = rows[0];
     EXPECT_EQ(row.symbol, "TEST");
     EXPECT_EQ(row.replay_event_index, 10u);
     EXPECT_EQ(row.replay_timestamp_ns, 1000u);
@@ -68,17 +61,13 @@ TEST(FeatureBuilderTest, BuildsTopOfBookFieldsFromSnapshot) {
 }
 
 TEST(FeatureBuilderTest, ComputesL1DepthImbalance) {
-    const BookSnapshot snapshot = MakeSnapshot(
-        1, 1,
-        100.0, 101.0, 1.0, 100.5,
-        {{100.0, 15}},
-        {{101.0, 5}}
-    );
+    const BookSnapshot snapshot =
+        MakeSnapshot(1, 1, 100.0, 101.0, 1.0, 100.5, {{100.0, 15}}, {{101.0, 5}});
 
     const auto rows = FeatureBuilder::BuildFromSnapshots({snapshot}, 1);
     ASSERT_EQ(rows.size(), 1u);
 
-    const auto& row = rows[0];
+    const auto &row = rows[0];
     ASSERT_TRUE(row.l1_bid_qty.has_value());
     ASSERT_TRUE(row.l1_ask_qty.has_value());
     ASSERT_TRUE(row.l1_depth_imbalance.has_value());
@@ -89,17 +78,14 @@ TEST(FeatureBuilderTest, ComputesL1DepthImbalance) {
 }
 
 TEST(FeatureBuilderTest, ComputesMultiLevelDepthImbalance) {
-    const BookSnapshot snapshot = MakeSnapshot(
-        2, 2,
-        100.0, 101.0, 1.0, 100.5,
-        {{100.0, 10}, {99.0, 20}, {98.0, 30}},
-        {{101.0, 15}, {102.0, 5}, {103.0, 10}}
-    );
+    const BookSnapshot snapshot =
+        MakeSnapshot(2, 2, 100.0, 101.0, 1.0, 100.5, {{100.0, 10}, {99.0, 20}, {98.0, 30}},
+                     {{101.0, 15}, {102.0, 5}, {103.0, 10}});
 
     const auto rows = FeatureBuilder::BuildFromSnapshots({snapshot}, 2);
     ASSERT_EQ(rows.size(), 1u);
 
-    const auto& row = rows[0];
+    const auto &row = rows[0];
     ASSERT_TRUE(row.lN_bid_qty_sum.has_value());
     ASSERT_TRUE(row.lN_ask_qty_sum.has_value());
     ASSERT_TRUE(row.lN_depth_imbalance.has_value());
@@ -110,17 +96,13 @@ TEST(FeatureBuilderTest, ComputesMultiLevelDepthImbalance) {
 }
 
 TEST(FeatureBuilderTest, LeavesImbalanceEmptyOnOneSidedBook) {
-    const BookSnapshot snapshot = MakeSnapshot(
-        3, 3,
-        100.0, std::nullopt, std::nullopt, std::nullopt,
-        {{100.0, 10}},
-        {}
-    );
+    const BookSnapshot snapshot =
+        MakeSnapshot(3, 3, 100.0, std::nullopt, std::nullopt, std::nullopt, {{100.0, 10}}, {});
 
     const auto rows = FeatureBuilder::BuildFromSnapshots({snapshot}, 3);
     ASSERT_EQ(rows.size(), 1u);
 
-    const auto& row = rows[0];
+    const auto &row = rows[0];
     ASSERT_TRUE(row.l1_bid_qty.has_value());
     EXPECT_FALSE(row.l1_ask_qty.has_value());
     EXPECT_FALSE(row.l1_depth_imbalance.has_value());
@@ -131,16 +113,10 @@ TEST(FeatureBuilderTest, LeavesImbalanceEmptyOnOneSidedBook) {
 }
 
 TEST(FeatureBuilderTest, BuildsMultipleRowsInInputOrder) {
-    const BookSnapshot s1 = MakeSnapshot(
-        1, 100,
-        100.0, 101.0, 1.0, 100.5,
-        {{100.0, 10}}, {{101.0, 8}}
-    );
-    const BookSnapshot s2 = MakeSnapshot(
-        2, 200,
-        101.0, 102.0, 1.0, 101.5,
-        {{101.0, 11}}, {{102.0, 9}}
-    );
+    const BookSnapshot s1 =
+        MakeSnapshot(1, 100, 100.0, 101.0, 1.0, 100.5, {{100.0, 10}}, {{101.0, 8}});
+    const BookSnapshot s2 =
+        MakeSnapshot(2, 200, 101.0, 102.0, 1.0, 101.5, {{101.0, 11}}, {{102.0, 9}});
 
     const auto rows = FeatureBuilder::BuildFromSnapshots({s1, s2}, 1);
     ASSERT_EQ(rows.size(), 2u);
@@ -154,12 +130,8 @@ TEST(FeatureBuilderTest, BuildsMultipleRowsInInputOrder) {
 }
 
 TEST(FeatureBuilderTest, CsvWriterProducesStableHeaderAndRows) {
-    const BookSnapshot snapshot = MakeSnapshot(
-        5, 500,
-        100.0, 101.0, 1.0, 100.5,
-        {{100.0, 12}, {99.0, 8}},
-        {{101.0, 6}, {102.0, 5}}
-    );
+    const BookSnapshot snapshot = MakeSnapshot(5, 500, 100.0, 101.0, 1.0, 100.5,
+                                               {{100.0, 12}, {99.0, 8}}, {{101.0, 6}, {102.0, 5}});
 
     const auto rows = FeatureBuilder::BuildFromSnapshots({snapshot}, 2);
 
@@ -173,14 +145,13 @@ TEST(FeatureBuilderTest, CsvWriterProducesStableHeaderAndRows) {
 
     std::string header;
     std::getline(in, header);
-    EXPECT_EQ(
-        header,
-        "symbol,replay_event_index,replay_timestamp_ns,best_bid,best_ask,spread,mid_price,"
-        "l1_bid_qty,l1_ask_qty,l1_depth_imbalance,lN_bid_qty_sum,lN_ask_qty_sum,"
-        "lN_depth_imbalance,ofi_l1,ofi_lN,weighted_ofi_lN,rolling_mean_spread,"
-        "rolling_mean_l1_total_depth,rolling_mean_lN_total_depth,rolling_mid_return,"
-        "rolling_realized_mid_vol,rolling_mean_abs_ofi_l1,rolling_mean_abs_ofi_lN");
-        
+    EXPECT_EQ(header,
+              "symbol,replay_event_index,replay_timestamp_ns,best_bid,best_ask,spread,mid_price,"
+              "l1_bid_qty,l1_ask_qty,l1_depth_imbalance,lN_bid_qty_sum,lN_ask_qty_sum,"
+              "lN_depth_imbalance,ofi_l1,ofi_lN,weighted_ofi_lN,rolling_mean_spread,"
+              "rolling_mean_l1_total_depth,rolling_mean_lN_total_depth,rolling_mid_return,"
+              "rolling_realized_mid_vol,rolling_mean_abs_ofi_l1,rolling_mean_abs_ofi_lN");
+
     std::string row;
     std::getline(in, row);
     EXPECT_FALSE(row.empty());
@@ -202,8 +173,8 @@ TEST(FeatureBuilderTest, OfiL1HandlesPriceAndSizeChanges) {
     curr.symbol = "TEST";
     curr.replay_event_index = 2;
     curr.replay_timestamp_ns = 200;
-    curr.bids = {DL{101.0, 12}};  // bid price up, new volume
-    curr.asks = {DL{101.0, 6}};   // ask price same, volume down
+    curr.bids = {DL{101.0, 12}}; // bid price up, new volume
+    curr.asks = {DL{101.0, 6}};  // ask price same, volume down
 
     auto rows = FeatureBuilder::BuildFromSnapshots({prev, curr}, 1);
     OfiFeatureBuilder::AddOfiFeatures(rows, {prev, curr}, 1);
@@ -234,8 +205,8 @@ TEST(FeatureBuilderTest, OfiLNAggregatesAcrossLevels) {
     curr.symbol = "TEST";
     curr.replay_event_index = 2;
     curr.replay_timestamp_ns = 200;
-    curr.bids = {DL{100.0, 12}, DL{99.0, 5}};  // L1 bid size up
-    curr.asks = {DL{101.0, 6}, DL{102.0, 6}};  // L1 ask size down, L2 ask size up
+    curr.bids = {DL{100.0, 12}, DL{99.0, 5}}; // L1 bid size up
+    curr.asks = {DL{101.0, 6}, DL{102.0, 6}}; // L1 ask size down, L2 ask size up
 
     auto rows = FeatureBuilder::BuildFromSnapshots({prev, curr}, 2);
     OfiFeatureBuilder::AddOfiFeatures(rows, {prev, curr}, 2);
@@ -440,9 +411,7 @@ TEST(FeatureBuilderTest, RollingContextComputesMeanAbsoluteOfi) {
 }
 TEST(FeatureBuilderTest, RollingContextRejectsZeroWindow) {
     std::vector<FeatureRow> rows(1);
-    EXPECT_THROW(
-        RollingFeatureBuilder::AddRollingContextFeatures(rows, 0),
-        std::runtime_error);
+    EXPECT_THROW(RollingFeatureBuilder::AddRollingContextFeatures(rows, 0), std::runtime_error);
 }
 
-}  // namespace bookforge
+} // namespace bookforge

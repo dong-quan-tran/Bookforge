@@ -1,20 +1,17 @@
 #include <gtest/gtest.h>
 
 #include "ExternalOrderEvent.hpp"
-#include "IReplayAdapter.hpp"
 #include "HyperliquidMatchingEngineAdapter.hpp"
-#include "replay/ReplayRunner.hpp"
-#include "replay/ReplayConfig.hpp"
+#include "IReplayAdapter.hpp"
 #include "core/matching_engine.hpp"
+#include "replay/ReplayConfig.hpp"
+#include "replay/ReplayRunner.hpp"
 
 namespace bookforge {
 namespace {
 
-ExternalOrderEvent MakeEvent(EventType type,
-                             double price = 100.0,
-                             double size = 1.0,
-                             bool isAsk = false,
-                             int statusId = 0,
+ExternalOrderEvent MakeEvent(EventType type, double price = 100.0, double size = 1.0,
+                             bool isAsk = false, int statusId = 0,
                              std::string statusText = "test") {
     ExternalOrderEvent ev{};
     ev.ts = std::chrono::nanoseconds{1};
@@ -28,8 +25,8 @@ ExternalOrderEvent MakeEvent(EventType type,
 }
 
 class StubReplayAdapter final : public IReplayAdapter {
-public:
-    void OnEvent(const ExternalOrderEvent& ev) override {
+  public:
+    void OnEvent(const ExternalOrderEvent &ev) override {
         seen.push_back(ev.eventType);
         switch (ev.eventType) {
         case EventType::New:
@@ -59,13 +56,13 @@ public:
         }
     }
 
-    const AdapterMetrics& Metrics() const override {
+    const AdapterMetrics &Metrics() const override {
         return metrics_;
     }
 
     std::vector<EventType> seen;
 
-private:
+  private:
     AdapterMetrics metrics_{};
 };
 
@@ -150,13 +147,9 @@ TEST(ReplayRunnerTest, StubBackedReplayIntegrationRespectsOffsetAndLimit) {
     ReplayRunner runner(config);
     StubReplayAdapter adapter;
 
-    std::vector<ExternalOrderEvent> events{
-        MakeEvent(EventType::New),
-        MakeEvent(EventType::Cancel),
-        MakeEvent(EventType::Fill),
-        MakeEvent(EventType::Reject),
-        MakeEvent(EventType::Other)
-    };
+    std::vector<ExternalOrderEvent> events{MakeEvent(EventType::New), MakeEvent(EventType::Cancel),
+                                           MakeEvent(EventType::Fill), MakeEvent(EventType::Reject),
+                                           MakeEvent(EventType::Other)};
 
     const bool ok = runner.Run(adapter, events);
 

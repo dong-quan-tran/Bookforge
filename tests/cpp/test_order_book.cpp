@@ -6,17 +6,13 @@ using namespace bookforge;
 
 namespace {
 
-Order MakeOrder(std::uint64_t id,
-                std::uint64_t participant_id,
-                Side side,
-                double price,
-                std::uint32_t quantity,
-                std::uint64_t timestamp,
+Order MakeOrder(std::uint64_t id, std::uint64_t participant_id, Side side, double price,
+                std::uint32_t quantity, std::uint64_t timestamp,
                 SelfTradePrevention stp = SelfTradePrevention::None) {
     return Order{id, participant_id, side, price, quantity, timestamp, stp};
 }
 
-}  // namespace
+} // namespace
 
 TEST(OrderBookTest, EmptyBookHasNoBestBidOrAsk) {
     OrderBook book;

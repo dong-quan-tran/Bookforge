@@ -9,7 +9,7 @@ using namespace bookforge;
 
 namespace {
 
-std::string WriteTempCsv(const std::string& filename, const std::string& content) {
+std::string WriteTempCsv(const std::string &filename, const std::string &content) {
     std::ofstream out(filename, std::ios::trunc);
     out << content;
     out.close();
@@ -23,8 +23,7 @@ TEST(HyperliquidCsvReaderTest, ReadsValidRows) {
         "hyperliquid_reader_valid_test.csv",
         "ts,limitPx,sz,isAsk,statusId,status,eventType\n"
         "2025-12-15 11:39:39.722049503,89691.0,0.01672,True,3,perpMarginRejected,Reject\n"
-        "2025-12-15 11:39:39.722049504,89690.0,0.02000,False,1,open,New\n"
-    );
+        "2025-12-15 11:39:39.722049504,89690.0,0.02000,False,1,open,New\n");
 
     HyperliquidCsvReader reader(path);
     const auto events = reader.read_all();
@@ -52,8 +51,7 @@ TEST(HyperliquidCsvReaderTest, SkipsMalformedRowsInNonStrictMode) {
         "ts,limitPx,sz,isAsk,statusId,status,eventType\n"
         "2025-12-15 11:39:39.722049503,89691.0,0.01672,True,3,perpMarginRejected,Reject\n"
         "bad,row\n"
-        "2025-12-15 11:39:39.722049504,89690.0,0.02000,False,1,open,New\n"
-    );
+        "2025-12-15 11:39:39.722049504,89690.0,0.02000,False,1,open,New\n");
 
     HyperliquidCsvReader reader(path);
     const auto events = reader.read_all(false, false);
@@ -68,8 +66,7 @@ TEST(HyperliquidCsvReaderTest, ThrowsOnMalformedRowsInStrictMode) {
         "hyperliquid_reader_strict_test.csv",
         "ts,limitPx,sz,isAsk,statusId,status,eventType\n"
         "2025-12-15 11:39:39.722049503,89691.0,0.01672,True,3,perpMarginRejected,Reject\n"
-        "bad,row\n"
-    );
+        "bad,row\n");
 
     HyperliquidCsvReader reader(path);
 
@@ -78,16 +75,14 @@ TEST(HyperliquidCsvReaderTest, ThrowsOnMalformedRowsInStrictMode) {
             const auto events = reader.read_all(true, false);
             (void)events;
         },
-        std::exception
-    );
+        std::exception);
 }
 
 TEST(HyperliquidCsvReaderTest, MapsUnknownStatusToOther) {
-    const std::string path = WriteTempCsv(
-        "hyperliquid_reader_other_test.csv",
-        "ts,limitPx,sz,isAsk,statusId,status,eventType\n"
-        "2025-12-15 11:39:39.722049503,89691.0,0.01672,True,9,mysteryState,Other\n"
-    );
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_other_test.csv",
+                     "ts,limitPx,sz,isAsk,statusId,status,eventType\n"
+                     "2025-12-15 11:39:39.722049503,89691.0,0.01672,True,9,mysteryState,Other\n");
 
     HyperliquidCsvReader reader(path);
     const auto events = reader.read_all();

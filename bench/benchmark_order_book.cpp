@@ -9,27 +9,19 @@ using namespace bookforge;
 namespace {
 using Clock = std::chrono::steady_clock;
 
-Order MakeOrder(std::uint64_t id,
-                std::uint64_t participant_id,
-                Side side,
-                double price,
-                std::uint32_t quantity,
-                std::uint64_t timestamp,
+Order MakeOrder(std::uint64_t id, std::uint64_t participant_id, Side side, double price,
+                std::uint32_t quantity, std::uint64_t timestamp,
                 SelfTradePrevention stp = SelfTradePrevention::None) {
     return Order{id, participant_id, side, price, quantity, timestamp, stp};
 }
 
-void PrintResult(const char* name,
-                 std::size_t iterations,
+void PrintResult(const char *name, std::size_t iterations,
                  std::chrono::steady_clock::time_point start,
                  std::chrono::steady_clock::time_point end) {
-    const auto total_ns =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    const auto total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
-    std::cout << name
-              << ": total_ns=" << total_ns
-              << ", avg_ns=" << (total_ns / static_cast<long long>(iterations))
-              << '\n';
+    std::cout << name << ": total_ns=" << total_ns
+              << ", avg_ns=" << (total_ns / static_cast<long long>(iterations)) << '\n';
 }
 
 void BenchmarkAddOrder(std::size_t iterations) {
@@ -38,9 +30,8 @@ void BenchmarkAddOrder(std::size_t iterations) {
     const auto start = Clock::now();
     for (std::size_t i = 0; i < iterations; ++i) {
         const Side side = (i % 2 == 0) ? Side::Buy : Side::Sell;
-        const double price = (side == Side::Buy)
-            ? 100.00 - static_cast<double>(i % 50) * 0.01
-            : 100.50 + static_cast<double>(i % 50) * 0.01;
+        const double price = (side == Side::Buy) ? 100.00 - static_cast<double>(i % 50) * 0.01
+                                                 : 100.50 + static_cast<double>(i % 50) * 0.01;
         const std::uint32_t quantity = 100 + static_cast<std::uint32_t>(i % 25);
         const std::uint64_t id = static_cast<std::uint64_t>(i + 1);
 
@@ -56,9 +47,8 @@ void BenchmarkCancelOrder(std::size_t iterations) {
 
     for (std::size_t i = 0; i < iterations; ++i) {
         const Side side = (i % 2 == 0) ? Side::Buy : Side::Sell;
-        const double price = (side == Side::Buy)
-            ? 100.00 - static_cast<double>(i % 50) * 0.01
-            : 100.50 + static_cast<double>(i % 50) * 0.01;
+        const double price = (side == Side::Buy) ? 100.00 - static_cast<double>(i % 50) * 0.01
+                                                 : 100.50 + static_cast<double>(i % 50) * 0.01;
         const std::uint32_t quantity = 100;
         const std::uint64_t id = static_cast<std::uint64_t>(i + 1);
 
@@ -166,7 +156,7 @@ void BenchmarkReplaceOrderNewPrice(std::size_t iterations) {
     PrintResult("ReplaceOrderNewPrice", iterations, start, end);
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     constexpr std::size_t kIterations = 100000;

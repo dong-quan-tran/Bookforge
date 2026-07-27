@@ -7,16 +7,15 @@
 namespace bookforge {
 namespace {
 
-void WriteOptional(std::ofstream& out, const std::optional<double>& value) {
+void WriteOptional(std::ofstream &out, const std::optional<double> &value) {
     if (value.has_value()) {
         out << *value;
     }
 }
 
-}  // namespace
+} // namespace
 
-void FeatureCsvWriter::Write(const std::string& path,
-                             const std::vector<FeatureRow>& rows) {
+void FeatureCsvWriter::Write(const std::string &path, const std::vector<FeatureRow> &rows) {
     std::ofstream out(path);
     if (!out.is_open()) {
         throw std::runtime_error("failed to open feature CSV for writing: " + path);
@@ -47,10 +46,8 @@ void FeatureCsvWriter::Write(const std::string& path,
         << ",rolling_mean_abs_ofi_lN"
         << "\n";
 
-    for (const auto& row : rows) {
-        out << row.symbol << ","
-            << row.replay_event_index << ","
-            << row.replay_timestamp_ns << ",";
+    for (const auto &row : rows) {
+        out << row.symbol << "," << row.replay_event_index << "," << row.replay_timestamp_ns << ",";
 
         WriteOptional(out, row.best_bid);
         out << ",";
@@ -95,4 +92,4 @@ void FeatureCsvWriter::Write(const std::string& path,
     }
 }
 
-}  // namespace bookforge
+} // namespace bookforge

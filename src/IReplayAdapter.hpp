@@ -19,11 +19,11 @@ struct AdapterMetrics {
 };
 
 class IReplayAdapter {
-public:
+  public:
     virtual ~IReplayAdapter() = default;
 
-    virtual void OnEvent(const ExternalOrderEvent& ev) = 0;
-    virtual const AdapterMetrics& Metrics() const = 0;
+    virtual void OnEvent(const ExternalOrderEvent &ev) = 0;
+    virtual const AdapterMetrics &Metrics() const = 0;
 };
 
 } // namespace bookforge

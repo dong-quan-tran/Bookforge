@@ -9,9 +9,9 @@
 namespace bookforge {
 
 class SnapshotBinaryDeserializer {
-public:
-    [[nodiscard]] static std::vector<BookSnapshot> Read(const std::string& path,
+  public:
+    [[nodiscard]] static std::vector<BookSnapshot> Read(const std::string &path,
                                                         std::size_t expected_depth_levels);
 };
 
-}  // namespace bookforge
+} // namespace bookforge

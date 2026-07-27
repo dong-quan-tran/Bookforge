@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "ExternalOrderEvent.hpp"
 #include "HyperliquidCsvReader.hpp"
 #include "HyperliquidMatchingEngineAdapter.hpp"
-#include "ExternalOrderEvent.hpp"
 #include "core/matching_engine.hpp"
 #include "replay/ReplayConfig.hpp"
 #include "replay/ReplayRunner.hpp"
@@ -18,7 +18,7 @@ namespace {
 #error "BOOKFORGE_TEST_FIXTURE_DIR is not defined"
 #endif
 
-std::string FixturePath(const std::string& filename) {
+std::string FixturePath(const std::string &filename) {
     return (std::filesystem::path(BOOKFORGE_TEST_FIXTURE_DIR) / filename).string();
 }
 
@@ -77,5 +77,5 @@ TEST(ReplayRegressionTest, BoundedFixtureReplayProducesStableSubrangeOutcome) {
     EXPECT_LE(adapter.Stats().totalEvents, static_cast<std::size_t>(2));
 }
 
-}  // namespace
-}  // namespace bookforge
+} // namespace
+} // namespace bookforge

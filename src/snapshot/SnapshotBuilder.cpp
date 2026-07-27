@@ -6,8 +6,7 @@
 
 namespace bookforge {
 
-BookSnapshot SnapshotBuilder::Build(const MatchingEngine& engine,
-                                    const SnapshotBuildContext& ctx,
+BookSnapshot SnapshotBuilder::Build(const MatchingEngine &engine, const SnapshotBuildContext &ctx,
                                     std::size_t depth_levels) {
     BookSnapshot snapshot{};
     snapshot.symbol = ctx.symbol;
@@ -19,7 +18,7 @@ BookSnapshot SnapshotBuilder::Build(const MatchingEngine& engine,
     snapshot.ignored_events = ctx.ignored_events;
     snapshot.generated_trades = ctx.generated_trades;
 
-    const OrderBook& book = engine.Book();
+    const OrderBook &book = engine.Book();
 
     snapshot.best_bid = book.GetBestBid();
     snapshot.best_ask = book.GetBestAsk();
@@ -32,15 +31,15 @@ BookSnapshot SnapshotBuilder::Build(const MatchingEngine& engine,
     snapshot.bids.reserve(bid_depth.size());
     snapshot.asks.reserve(ask_depth.size());
 
-    for (const auto& [price, qty] : bid_depth) {
+    for (const auto &[price, qty] : bid_depth) {
         snapshot.bids.push_back(DepthLevelSnapshot{price, qty});
     }
 
-    for (const auto& [price, qty] : ask_depth) {
+    for (const auto &[price, qty] : ask_depth) {
         snapshot.asks.push_back(DepthLevelSnapshot{price, qty});
     }
 
     return snapshot;
 }
 
-}  // namespace bookforge
+} // namespace bookforge

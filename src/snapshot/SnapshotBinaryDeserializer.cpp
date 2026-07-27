@@ -13,42 +13,36 @@ namespace {
 constexpr char kMagic[8] = {'B', 'F', 'S', 'N', 'A', 'P', '0', '1'};
 constexpr std::uint32_t kVersion = 1;
 
-void ReadBytes(std::ifstream& in, void* data, std::size_t size) {
-    in.read(reinterpret_cast<char*>(data), static_cast<std::streamsize>(size));
+void ReadBytes(std::ifstream &in, void *data, std::size_t size) {
+    in.read(reinterpret_cast<char *>(data), static_cast<std::streamsize>(size));
     if (!in) {
         throw std::runtime_error("failed to read binary snapshot bytes");
     }
 }
 
-std::uint8_t ReadU8(std::ifstream& in) {
+std::uint8_t ReadU8(std::ifstream &in) {
     std::uint8_t value = 0;
     ReadBytes(in, &value, sizeof(value));
     return value;
 }
 
-std::uint32_t ReadU32(std::ifstream& in) {
+std::uint32_t ReadU32(std::ifstream &in) {
     std::uint8_t buf[4];
     ReadBytes(in, buf, sizeof(buf));
-    return static_cast<std::uint32_t>(buf[0]) |
-           (static_cast<std::uint32_t>(buf[1]) << 8) |
-           (static_cast<std::uint32_t>(buf[2]) << 16) |
-           (static_cast<std::uint32_t>(buf[3]) << 24);
+    return static_cast<std::uint32_t>(buf[0]) | (static_cast<std::uint32_t>(buf[1]) << 8) |
+           (static_cast<std::uint32_t>(buf[2]) << 16) | (static_cast<std::uint32_t>(buf[3]) << 24);
 }
 
-std::uint64_t ReadU64(std::ifstream& in) {
+std::uint64_t ReadU64(std::ifstream &in) {
     std::uint8_t buf[8];
     ReadBytes(in, buf, sizeof(buf));
-    return static_cast<std::uint64_t>(buf[0]) |
-           (static_cast<std::uint64_t>(buf[1]) << 8) |
-           (static_cast<std::uint64_t>(buf[2]) << 16) |
-           (static_cast<std::uint64_t>(buf[3]) << 24) |
-           (static_cast<std::uint64_t>(buf[4]) << 32) |
-           (static_cast<std::uint64_t>(buf[5]) << 40) |
-           (static_cast<std::uint64_t>(buf[6]) << 48) |
-           (static_cast<std::uint64_t>(buf[7]) << 56);
+    return static_cast<std::uint64_t>(buf[0]) | (static_cast<std::uint64_t>(buf[1]) << 8) |
+           (static_cast<std::uint64_t>(buf[2]) << 16) | (static_cast<std::uint64_t>(buf[3]) << 24) |
+           (static_cast<std::uint64_t>(buf[4]) << 32) | (static_cast<std::uint64_t>(buf[5]) << 40) |
+           (static_cast<std::uint64_t>(buf[6]) << 48) | (static_cast<std::uint64_t>(buf[7]) << 56);
 }
 
-double ReadDouble(std::ifstream& in) {
+double ReadDouble(std::ifstream &in) {
     const std::uint64_t bits = ReadU64(in);
     double value = 0.0;
     static_assert(sizeof(double) == sizeof(std::uint64_t));
@@ -56,7 +50,7 @@ double ReadDouble(std::ifstream& in) {
     return value;
 }
 
-std::string ReadString(std::ifstream& in) {
+std::string ReadString(std::ifstream &in) {
     const std::uint32_t len = ReadU32(in);
     std::string value(len, '\0');
     if (len > 0) {
@@ -65,7 +59,7 @@ std::string ReadString(std::ifstream& in) {
     return value;
 }
 
-std::optional<double> ReadOptionalDouble(std::ifstream& in) {
+std::optional<double> ReadOptionalDouble(std::ifstream &in) {
     const std::uint8_t present = ReadU8(in);
     if (present > 1u) {
         throw std::runtime_error("invalid optional-double presence flag");
@@ -76,7 +70,7 @@ std::optional<double> ReadOptionalDouble(std::ifstream& in) {
     return ReadDouble(in);
 }
 
-std::vector<DepthLevelSnapshot> ReadDepthSide(std::ifstream& in,
+std::vector<DepthLevelSnapshot> ReadDepthSide(std::ifstream &in,
                                               std::size_t expected_depth_levels) {
     const std::uint32_t count = ReadU32(in);
     if (count > expected_depth_levels) {
@@ -86,19 +80,15 @@ std::vector<DepthLevelSnapshot> ReadDepthSide(std::ifstream& in,
     std::vector<DepthLevelSnapshot> side;
     side.reserve(count);
     for (std::uint32_t i = 0; i < count; ++i) {
-        side.push_back(DepthLevelSnapshot{
-            ReadDouble(in),
-            ReadU32(in)
-        });
+        side.push_back(DepthLevelSnapshot{ReadDouble(in), ReadU32(in)});
     }
     return side;
 }
 
-}  // namespace
+} // namespace
 
-std::vector<BookSnapshot> SnapshotBinaryDeserializer::Read(
-    const std::string& path,
-    std::size_t expected_depth_levels) {
+std::vector<BookSnapshot> SnapshotBinaryDeserializer::Read(const std::string &path,
+                                                           std::size_t expected_depth_levels) {
     std::ifstream in(path, std::ios::binary);
     if (!in.is_open()) {
         throw std::runtime_error("failed to open binary snapshot file for reading: " + path);
@@ -155,4 +145,4 @@ std::vector<BookSnapshot> SnapshotBinaryDeserializer::Read(
     return snapshots;
 }
 
-}  // namespace bookforge
+} // namespace bookforge

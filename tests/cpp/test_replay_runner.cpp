@@ -13,15 +13,9 @@ using namespace bookforge;
 
 namespace {
 
-ExternalOrderEvent MakeEvent(
-    EventType type,
-    bool isAsk,
-    double price,
-    double size,
-    int statusId = 1,
-    const std::string& statusText = "open",
-    std::int64_t ts_ns = 0
-) {
+ExternalOrderEvent MakeEvent(EventType type, bool isAsk, double price, double size,
+                             int statusId = 1, const std::string &statusText = "open",
+                             std::int64_t ts_ns = 0) {
     ExternalOrderEvent ev{};
     ev.ts = std::chrono::nanoseconds{ts_ns};
     ev.price = price;
@@ -56,7 +50,7 @@ TEST(ReplayRunnerTest, ProcessesOnlyBoundedPrefixWhenMaxEventsSet) {
 
     EXPECT_TRUE(runner.Run(adapter, events));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 2u);
     EXPECT_EQ(stats.newCount, 1u);
     EXPECT_EQ(stats.rejectCount, 1u);
@@ -92,7 +86,7 @@ TEST(ReplayRunnerTest, AppliesStartOffsetBeforeMaxEvents) {
 
     EXPECT_TRUE(runner.Run(adapter, events));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 2u);
     EXPECT_EQ(stats.newCount, 1u);
     EXPECT_EQ(stats.rejectCount, 1u);
@@ -127,12 +121,12 @@ TEST(ReplayRunnerTest, PreservesInputOrderingExactly) {
 
     EXPECT_TRUE(runner.Run(adapter, events));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 3u);
     EXPECT_EQ(stats.newCount, 3u);
     EXPECT_EQ(stats.generatedTrades, 1u);
 
-    const auto& trades = adapter.Trades();
+    const auto &trades = adapter.Trades();
     ASSERT_EQ(trades.size(), 1u);
     EXPECT_DOUBLE_EQ(trades[0].price, 100.50);
     EXPECT_EQ(trades[0].side, Side::Buy);
@@ -164,7 +158,7 @@ TEST(ReplayRunnerTest, OffsetPastEndProcessesNothing) {
 
     EXPECT_TRUE(runner.Run(adapter, events));
 
-    const auto& stats = adapter.Stats();
+    const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 0u);
     EXPECT_EQ(stats.newCount, 0u);
     EXPECT_EQ(stats.submittedOrders, 0u);
