@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from python.bookforge_py.loaders import (
+from bookforge_py.loaders import (
     feature_column_names,
     split_feature_columns,
     validate_feature_frame,

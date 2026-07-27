@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 from fastapi.testclient import TestClient
 
-from python.api.main import app
+from api.main import app
 
 client = TestClient(app)
 

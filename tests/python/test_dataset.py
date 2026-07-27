@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from python.bookforge_py.dataset import (
+from bookforge_py.dataset import (
     TrainingDataset,
     build_training_dataset_from_frame,
     chronological_split,
