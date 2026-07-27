@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
@@ -77,8 +76,10 @@ NONNEGATIVE_COLUMNS = [
     "rolling_mean_abs_ofi_lN",
 ]
 
+
 def fail(message: str) -> None:
     raise SystemExit(f"[feature-export-validation] ERROR: {message}")
+
 
 def main() -> int:
     if len(sys.argv) != 2:
@@ -127,11 +128,7 @@ def main() -> int:
         fail("replay_timestamp_ns must be monotonically increasing")
 
     if {"best_bid", "best_ask", "spread"}.issubset(df.columns):
-        mask = (
-            df["best_bid"].notna() &
-            df["best_ask"].notna() &
-            df["spread"].notna()
-        )
+        mask = df["best_bid"].notna() & df["best_ask"].notna() & df["spread"].notna()
         if mask.any():
             expected_spread = df.loc[mask, "best_ask"] - df.loc[mask, "best_bid"]
             actual_spread = df.loc[mask, "spread"]
@@ -140,11 +137,7 @@ def main() -> int:
                 fail("spread does not match best_ask - best_bid")
 
     if {"best_bid", "best_ask", "mid_price"}.issubset(df.columns):
-        mask = (
-            df["best_bid"].notna() &
-            df["best_ask"].notna() &
-            df["mid_price"].notna()
-        )
+        mask = df["best_bid"].notna() & df["best_ask"].notna() & df["mid_price"].notna()
         if mask.any():
             expected_mid = (df.loc[mask, "best_bid"] + df.loc[mask, "best_ask"]) / 2.0
             actual_mid = df.loc[mask, "mid_price"]
@@ -158,6 +151,7 @@ def main() -> int:
     print(f"first_event_index={df['replay_event_index'].iloc[0]}")
     print(f"last_event_index={df['replay_event_index'].iloc[-1]}")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

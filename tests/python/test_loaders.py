@@ -1,12 +1,11 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
-from bookforge_py.loaders import (
-    REQUIRED_FEATURE_COLUMNS,
-    validate_feature_frame,
-    split_feature_columns,
+from python.bookforge_py.loaders import (
     feature_column_names,
+    split_feature_columns,
+    validate_feature_frame,
 )
 
 

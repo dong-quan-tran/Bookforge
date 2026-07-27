@@ -1,12 +1,10 @@
 import numpy as np
 import pandas as pd
-import pytest
-
 from bookforge_py.dataset import (
+    TrainingDataset,
     build_training_dataset_from_frame,
     chronological_split,
     walk_forward_splits,
-    TrainingDataset,
 )
 
 
@@ -91,7 +89,10 @@ def test_chronological_split_preserves_order_and_fraction():
     assert len(split.X_train) + len(split.X_test) == n_total
 
     # train/test windows should be non-overlapping and ordered
-    assert split.meta_train["replay_event_index"].iloc[-1] < split.meta_test["replay_event_index"].iloc[0]
+    assert (
+        split.meta_train["replay_event_index"].iloc[-1]
+        < split.meta_test["replay_event_index"].iloc[0]
+    )
 
 
 def test_walk_forward_splits_generates_expected_folds():

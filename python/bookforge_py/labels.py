@@ -6,7 +6,6 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-
 LabelType = Literal["regression", "classification"]
 
 
@@ -19,6 +18,7 @@ class HorizonSpec:
     horizon_events : int
         Number of events ahead to use when computing the future mid-price.
     """
+
     horizon_events: int = 50
 
 
@@ -34,6 +34,7 @@ class ClassificationThresholds:
         Maximum log-return to label an observation as 'down' (-1).
         This should be a positive number; the negative is applied internally.
     """
+
     up: float = 0.0
     down: float = 0.0
 

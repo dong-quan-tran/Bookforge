@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+import bookforge_py as bf
 import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
@@ -13,8 +14,6 @@ from sklearn.metrics import (
     r2_score,
 )
 from xgboost import XGBClassifier, XGBRegressor
-
-import bookforge_py as bf
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -167,7 +166,9 @@ def _save_feature_importance(model, feature_names: list[str], output_dir: Path) 
     return path
 
 
-def _save_shap_values(model, X_reference: pd.DataFrame, output_dir: Path, sample_size: int) -> str | None:
+def _save_shap_values(
+    model, X_reference: pd.DataFrame, output_dir: Path, sample_size: int
+) -> str | None:
     try:
         import shap
     except ImportError:

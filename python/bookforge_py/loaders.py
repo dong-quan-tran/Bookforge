@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 REQUIRED_FEATURE_COLUMNS = [
     "replay_event_index",
