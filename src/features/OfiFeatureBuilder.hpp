@@ -10,6 +10,10 @@ namespace bookforge {
 
 class OfiFeatureBuilder {
 public:
+    static void AddOfiFeatures(
+        std::vector<FeatureRow>& rows,
+        const std::vector<BookSnapshot>& snapshots,
+        std::size_t depth_levels_for_ofi);
 
 private:
     [[nodiscard]] static double ComputeBestLevelOfi(
