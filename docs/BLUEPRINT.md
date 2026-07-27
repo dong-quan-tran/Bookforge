@@ -294,7 +294,7 @@ Create a lightweight surface for inspection and demos.
 - [x] Build FastAPI service
 - [x] Add endpoint for replay summary
 - [x] Add endpoint for feature export / sample retrieval
-- [ ] Add endpoint for book snapshot inspection
+- [x] Add endpoint for book snapshot inspection
 - [x] Build React dashboard
 - [x] Visualize spread, mid-price, depth, and imbalance
 - [x] Add replay summary cards and charts

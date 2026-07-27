@@ -238,7 +238,9 @@ def build_snapshot_inspect(
         "snapshot_csv": str(path),
         "row_index": int(row_index),
         "total_rows": int(len(df)),
-        "symbol": str(row.get(symbol_col)) if symbol_col and row.get(symbol_col) is not None else None,
+        "symbol": str(row.get(symbol_col))
+        if symbol_col and row.get(symbol_col) is not None
+        else None,
         "replay_event_index": _coerce_int(row.get(event_col)) if event_col else None,
         "replay_timestamp_ns": _coerce_int(row.get(ts_col)) if ts_col else None,
         "best_bid": _coerce_float(row.get("best_bid")),
