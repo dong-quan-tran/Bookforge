@@ -14,7 +14,7 @@ using namespace bookforge;
 
 namespace {
 
-std::vector<ExternalOrderEvent> LoadFixtureEvents(const std::string& path) {
+std::vector<ExternalOrderEvent> LoadFixtureEvents(const std::string &path) {
     HyperliquidCsvReader reader(path);
     auto events = reader.read_all(false, false);
 
@@ -25,14 +25,14 @@ std::vector<ExternalOrderEvent> LoadFixtureEvents(const std::string& path) {
     return events;
 }
 
-const std::vector<ExternalOrderEvent>& BenchmarkEvents() {
+const std::vector<ExternalOrderEvent> &BenchmarkEvents() {
     static const std::vector<ExternalOrderEvent> events =
         LoadFixtureEvents(BOOKFORGE_BENCH_FIXTURE_FILE);
     return events;
 }
 
-static void BM_ReplayThroughput(benchmark::State& state) {
-    const auto& events = BenchmarkEvents();
+static void BM_ReplayThroughput(benchmark::State &state) {
+    const auto &events = BenchmarkEvents();
 
     for (auto _ : state) {
         MatchingEngine engine;
@@ -53,10 +53,10 @@ static void BM_ReplayThroughput(benchmark::State& state) {
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(
-        static_cast<int64_t>(state.iterations()) * static_cast<int64_t>(events.size()));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) *
+                            static_cast<int64_t>(events.size()));
 }
 
 BENCHMARK(BM_ReplayThroughput)->MinTime(0.5);
 
-}  // namespace
+} // namespace
