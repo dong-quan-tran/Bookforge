@@ -10,6 +10,7 @@
 #include "core/matching_engine.hpp"
 #include "core/order.hpp"
 #include "core/trade.hpp"
+#include "replay/InjectedOrder.hpp"
 
 namespace bookforge {
 
@@ -25,6 +26,8 @@ struct ReplayStats {
     std::size_t submittedOrders{0};
     std::size_t ignoredEvents{0};
     std::size_t generatedTrades{0};
+
+    std::size_t injectedOrders{0};
 };
 
 class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
@@ -38,7 +41,7 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         case EventType::New:
             ++stats_.newCount;
             ++metrics_.newEvents;
-            SubmitNewOrder(ev);
+            SubmitExternalNewOrder(ev);
             break;
         case EventType::Cancel:
             ++stats_.cancelCount;
@@ -68,34 +71,41 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         }
     }
 
-    const AdapterMetrics &Metrics() const override {
-        return metrics_;
+    void OnInjectedOrder(const InjectedOrder &order) override {
+        ++stats_.injectedOrders;
+
+        SubmitOrder(order.is_buy ? Side::Buy : Side::Sell, order.price, order.quantity);
     }
 
-    const ReplayStats &Stats() const {
-        return stats_;
-    }
+    const AdapterMetrics &Metrics() const override { return metrics_; }
 
-    const std::vector<Trade> &Trades() const {
-        return trades_;
-    }
+    const ReplayStats &Stats() const { return stats_; }
+
+    const std::vector<Trade> &Trades() const { return trades_; }
 
   private:
-    void SubmitNewOrder(const ExternalOrderEvent &ev) {
-        Order order{};
-        order.id = nextSyntheticOrderId_++;
-        order.participant_id = 0;
-        order.side = ev.isAsk ? Side::Sell : Side::Buy;
-        order.price = ev.price;
-        order.quantity = ToInternalQuantity(ev.size);
-        order.timestamp = nextSyntheticTimestamp_++;
-        order.stp = SelfTradePrevention::None;
+    void SubmitExternalNewOrder(const ExternalOrderEvent &ev) {
+        const Side side = ev.isAsk ? Side::Sell : Side::Buy;
+        const std::uint32_t quantity = ToInternalQuantity(ev.size);
 
-        if (order.quantity == 0) {
+        SubmitOrder(side, ev.price, quantity);
+    }
+
+    void SubmitOrder(Side side, double price, std::uint32_t quantity) {
+        if (quantity == 0) {
             ++stats_.ignoredEvents;
             ++metrics_.ignored;
             return;
         }
+
+        Order order{};
+        order.id = nextSyntheticOrderId_++;
+        order.participant_id = 0;
+        order.side = side;
+        order.price = price;
+        order.quantity = quantity;
+        order.timestamp = nextSyntheticTimestamp_++;
+        order.stp = SelfTradePrevention::None;
 
         MatchResult result = engine_.MatchLimitOrder(order);
 

@@ -4,9 +4,35 @@
 #include <iostream>
 
 namespace bookforge {
+namespace {
+
+void DispatchInjectedOrders(IReplayAdapter &adapter,
+                            const InjectedOrderSchedule &schedule,
+                            std::size_t event_index,
+                            InjectedOrderTiming timing) {
+    const auto *orders = schedule.Find(event_index);
+    if (orders == nullptr) {
+        return;
+    }
+
+    for (const auto &order : *orders) {
+        if (order.timing == timing) {
+            adapter.OnInjectedOrder(order);
+        }
+    }
+}
+
+} // namespace
 
 bool ReplayRunner::Run(IReplayAdapter &adapter,
                        const std::vector<ExternalOrderEvent> &events) const {
+    InjectedOrderSchedule empty_schedule;
+    return Run(adapter, events, empty_schedule);
+}
+
+bool ReplayRunner::Run(IReplayAdapter &adapter,
+                       const std::vector<ExternalOrderEvent> &events,
+                       const InjectedOrderSchedule &schedule) const {
     const std::size_t total = events.size();
     const std::size_t start =
         static_cast<std::size_t>(config_.start_offset > total ? total : config_.start_offset);
@@ -18,7 +44,10 @@ bool ReplayRunner::Run(IReplayAdapter &adapter,
             break;
         }
 
+        DispatchInjectedOrders(adapter, schedule, i, InjectedOrderTiming::BeforeEvent);
         adapter.OnEvent(events[i]);
+        DispatchInjectedOrders(adapter, schedule, i, InjectedOrderTiming::AfterEvent);
+
         ++processed;
 
         if (config_.log_every_n != 0 &&

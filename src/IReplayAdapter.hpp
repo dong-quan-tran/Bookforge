@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstddef>
+
 #include "ExternalOrderEvent.hpp"
+#include "replay/InjectedOrder.hpp"
 
 namespace bookforge {
 
@@ -23,6 +26,7 @@ class IReplayAdapter {
     virtual ~IReplayAdapter() = default;
 
     virtual void OnEvent(const ExternalOrderEvent &ev) = 0;
+    virtual void OnInjectedOrder(const InjectedOrder &order) = 0;
     virtual const AdapterMetrics &Metrics() const = 0;
 };
 
