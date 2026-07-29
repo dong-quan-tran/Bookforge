@@ -45,11 +45,57 @@ def test_validate_feature_frame_missing_required_columns_raises():
     assert "Missing required columns" in str(excinfo.value)
 
 
-def test_validate_feature_frame_non_monotonic_indices_allowed_for_now():
+def test_validate_feature_frame_non_monotonic_event_index_raises():
     df = _make_valid_frame()
-    df.loc[2, "replay_event_index"] = df.loc[1, "replay_event_index"]
-    # current implementation does not raise; this test just documents that behavior
-    validate_feature_frame(df)
+    df.loc[2, "replay_event_index"] = df.loc[1, "replay_event_index"] - 1
+    with pytest.raises(ValueError) as excinfo:
+        validate_feature_frame(df)
+    assert "replay_event_index must be monotonic increasing" in str(excinfo.value)
+
+
+def test_validate_feature_frame_non_monotonic_timestamp_raises():
+    df = _make_valid_frame()
+    df.loc[2, "replay_timestamp_ns"] = df.loc[1, "replay_timestamp_ns"] - 1
+    with pytest.raises(ValueError) as excinfo:
+        validate_feature_frame(df)
+    assert "replay_timestamp_ns must be monotonic increasing" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("column,bad_value", [("l1_depth_imbalance", -1.1), ("l1_depth_imbalance", 1.1), ("lN_depth_imbalance", -1.01), ("lN_depth_imbalance", 1.01)])
+def test_bounded_imbalance_columns_enforced(column: str, bad_value: float):
+    df = _make_valid_frame()
+    df[column] = np.zeros(len(df))
+    df.loc[0, column] = bad_value
+    with pytest.raises(ValueError) as excinfo:
+        validate_feature_frame(df)
+    assert f"{column} must stay within [-1, 1]" in str(excinfo.value)
+
+
+def test_split_feature_columns_supports_custom_metadata_columns():
+    df = _make_valid_frame()
+    df["symbol"] = ["BTCUSDT.P"] * len(df)
+
+    meta, feats = split_feature_columns(
+        df,
+        metadata_columns=["replay_event_index", "replay_timestamp_ns", "symbol"],
+    )
+
+    assert set(meta.columns) == {"replay_event_index", "replay_timestamp_ns", "symbol"}
+    assert "symbol" not in feats.columns
+
+
+def test_feature_column_names_supports_custom_metadata_columns():
+    df = _make_valid_frame()
+    df["symbol"] = ["BTCUSDT.P"] * len(df)
+
+    feature_cols = feature_column_names(
+        df,
+        metadata_columns=["replay_event_index", "replay_timestamp_ns", "symbol"],
+    )
+
+    assert "symbol" not in feature_cols
+    assert "best_bid" in feature_cols
+    assert "best_ask" in feature_cols
 
 
 def test_validate_feature_frame_spread_relation_enforced():
