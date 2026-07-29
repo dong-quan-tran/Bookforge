@@ -1,5 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "ExternalOrderEvent.hpp"
 #include "HyperliquidMatchingEngineAdapter.hpp"
 #include "IReplayAdapter.hpp"
@@ -56,11 +61,12 @@ class StubReplayAdapter final : public IReplayAdapter {
         }
     }
 
-    const AdapterMetrics &Metrics() const override {
-        return metrics_;
-    }
+    void OnInjectedOrder(const InjectedOrder &) override { ++injected_calls; }
+
+    const AdapterMetrics &Metrics() const override { return metrics_; }
 
     std::vector<EventType> seen;
+    std::size_t injected_calls{0};
 
   private:
     AdapterMetrics metrics_{};
@@ -160,6 +166,7 @@ TEST(ReplayRunnerTest, StubBackedReplayIntegrationRespectsOffsetAndLimit) {
     EXPECT_EQ(adapter.seen[2], EventType::Reject);
     EXPECT_EQ(adapter.Metrics().unsupported, 2u);
     EXPECT_EQ(adapter.Metrics().rejected, 1u);
+    EXPECT_EQ(adapter.injected_calls, 0u);
 }
 
 } // namespace
