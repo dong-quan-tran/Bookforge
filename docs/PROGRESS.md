@@ -1079,3 +1079,79 @@ git log --oneline --graph --decorate -10
 - Reintroduce multi-size replay benchmark arguments once the fixture supports them.
 - Re-run benchmarks and capture a more representative replay throughput baseline.
 - Verify the GitHub Actions run is fully green after the formatting commit.
+
+# Progress Log — July 28, 2026
+
+## Summary
+
+Today focused on Phase 9 polish for Bookforge: documentation cleanup, test expansion, and milestone preparation. The repo is now in a much stronger state, with broader Python and C++ coverage, improved architecture docs, and a clean milestone tag in place.
+
+## Completed work
+
+### Documentation
+- Rewrote and polished `docs/ARCHITECTURE.md`.
+- Added architecture diagrams for the replay pipeline, core engine structure, and replay control flow.
+- Updated `docs/INTERVIEW_PREP.md` with clearer project framing and stronger interview talking points.
+- Refined `README.md` to better reflect current project scope, benchmarks, and usage.
+- Updated `docs/BLUEPRINT.md` to reflect current Phase 9 progress.
+
+### Replay benchmark update
+- Expanded the replay benchmark fixture from a tiny smoke dataset to a large synthetic CSV fixture.
+- `benchmark_replay.exe` now reports meaningful throughput instead of mostly benchmark overhead.
+- Latest observed result on the large fixture was approximately 3.05M events/sec in Release mode on Windows.
+- Interpretation: replay benchmark plumbing was correct; the prior flat result was caused by an undersized fixture.
+
+### Testing
+- Added C++ edge-case tests for:
+  - order book behavior,
+  - matching engine behavior,
+  - replay runner bounds and ordering,
+  - CSV reader parsing.
+- Added Python edge-case tests for:
+  - API pagination and snapshot inspection,
+  - loader validation and column splitting,
+  - dataset construction and walk-forward splitting.
+- Confirmed all tests are green:
+  - Python: 41 passed.
+  - C++: 130 passed.
+
+### Benchmarking
+- Expanded the replay benchmark fixture so throughput measurements are meaningful.
+- Kept the order book benchmark and replay benchmark both compiling and running successfully.
+
+### Release / milestone
+- Created and confirmed milestone tag `v0.1.0`.
+- Tag points to the Phase 9 milestone commit and is an annotated release-style tag.
+
+## Commit log
+
+Commits from July 28, 2026:
+
+- `4f970a2` — Polish architecture documentation
+- `08513c7` — Polish project README
+- `c519ecc` — Add API pagination and snapshot edge case tests
+- `7467b67` — Add dataset and loader boundary tests
+- `c9bdcb6` — Add replay runner and CSV reader edge case tests
+- `a016905` — Add order book and matching engine edge case tests
+- `6d2a8a8` — Update Phase 9 progress
+- `63da3f4` — Add architecture diagrams
+- `26facae` — Update interview prep material
+- `93f4c0f` — Update README benchmark and project overview
+- `26c0ffd` — Add large replay benchmark fixture
+- `9f13bfc` — Update project architecture
+
+## Current state
+
+- The repo is in a clean milestone state.
+- Core docs are substantially improved.
+- Test coverage increased on both C++ and Python sides.
+- Benchmarking is now more meaningful, especially for replay throughput.
+- The Phase 9 milestone tag is in place and ready as a checkpoint.
+
+## Next steps
+
+- Continue toward the remaining Phase 9 checklist items if desired:
+  - 50+ Google Tests.
+  - 50+ Pytest cases.
+  - final release polish if needed.
+- Otherwise, treat `v0.1.0` as the Phase 9 milestone and move on to the next phase.
