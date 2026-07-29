@@ -321,17 +321,24 @@ Raise the repo from “works” to a serious, maintainable project.
 - [x] Add profiling notes.
 - [x] Add GitHub Actions CI.
 - [x] Add formatting / linting rules.
-- [ ] Improve README and docs.
-- [ ] Finish `docs/INTERVIEW_PREP.md`.
-- [ ] Add architecture diagrams.
+- [x] Improve README and docs.
+- [x] Finish `docs/INTERVIEW_PREP.md`.
+- [x] Add architecture diagrams.
 - [ ] Tag a clean milestone release.
 
 ### Current status
 - [x] `benchmark_order_book` is built and running.
 - [x] `benchmark_replay` is built and running.
+- [x] Replay benchmark fixture was expanded from a tiny smoke dataset to a large synthetic CSV fixture.
+- [x] Replay benchmark now produces meaningful throughput measurements in Release mode.
+- [x] Replay benchmark fixture selection is wired through CMake instead of being hardcoded in `bench/CMakeLists.txt`.
+- [x] A fixture generator script exists at `tools/generate_replay_fixture.py`.
 - [x] CI formatting mismatch resolved with `clang-format`.
 - [x] Merge conflict resolved and history cleaned up into separate commits.
-- [ ] Replay benchmark fixture still needs to be expanded for meaningful throughput measurements.
+- [x] README updated to reflect benchmark coverage and current project scope.
+- [x] `docs/INTERVIEW_PREP.md` still needs to be finished.
+- [x] Architecture diagrams still need to be added.
+- [ ] Milestone release still needs to be tagged.
 
 ---
 
