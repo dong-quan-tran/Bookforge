@@ -974,3 +974,108 @@ The next best Phase 9 task is likely documentation polish, especially:
 - improving the README wording and status tables,
 - finishing `docs/INTERVIEW_PREP.md`,
 - and then returning to benchmarks and test-count growth.
+
+# Bookforge Progress Log — 2026-07-27
+
+## Overview
+Today's work focused on CI stabilization, benchmark setup, replay benchmark integration, and repository cleanup after a divergent-branch merge. The branch history for the day includes a README update, CI workflow refactors, formatting consistency fixes, a merge from `origin/main`, benchmark-related code changes, and a final formatting-only commit for CI compliance.
+
+## Commits completed
+- [Update general readme](https://github.com/dong-quan-tran/Bookforge/commit/28e228ad0941456b974d6b21a653740ed2415d22)
+- [Refactor CI workflow for linting and formatting steps](https://github.com/dong-quan-tran/Bookforge/commit/4e9c477ddb070aef527d1da5682b7f1fa0eacba5)
+- [Refactor lint job in CI workflow](https://github.com/dong-quan-tran/Bookforge/commit/88723a9cbed2ed1eab1aacb1fa87d30620aab957)
+- [add gitattributes to tackle local vs CI clang-format mismatch](https://github.com/dong-quan-tran/Bookforge/commit/40a5d185278f97133a3298a27ab677f4b8dedadc)
+- [format C++ sources with clang-format](https://github.com/dong-quan-tran/Bookforge/commit/e88bd95b8aa4fd6a7898258a1ff7dbb9d8dbe69f)
+- [fix Ruff import ordering in tests](https://github.com/dong-quan-tran/Bookforge/commit/f7c9f94a64117b03fe54fc91c6c6ded1cf115277)
+- [fix Python test imports for repo package layout](https://github.com/dong-quan-tran/Bookforge/commit/3c1c5e4178a84367057ce4ed43af4dfdd7dcf282)
+- [update C++ CSV header expectation](https://github.com/dong-quan-tran/Bookforge/commit/dd7f5188b92e97c1ff9c6a4f25ccdad88db180bf)
+- [Merge origin/main into main](https://github.com/dong-quan-tran/Bookforge/commit/30cfd3f6bff7c08c0af73686bb6427c683cf4fdc)
+- [Adjust CMake and order book benchmark](https://github.com/dong-quan-tran/Bookforge/commit/3de317c0921bc0cb6e9df4f90adea7d7114d5989)
+- [Add replay benchmark](https://github.com/dong-quan-tran/Bookforge/commit/d1c03ea35caad513e7ffdf891efc1f67331f4b4a)
+- [Format benchmark sources](https://github.com/dong-quan-tran/Bookforge/commit/fcf639aabfd8ddc67c6257f794a0ed015daa3cfc)
+
+## Benchmark work
+### Order book benchmark
+The order book benchmark built and ran successfully in Release mode. The benchmark suite covered add, cancel, execute partial, execute full, reduce quantity, replace same price, and replace new price paths.
+
+Example run command:
+
+```powershell
+.\build\bench\Release\benchmark_order_book.exe
+```
+
+Release build command used before running benchmarks:
+
+```powershell
+cmake --build build --config Release --parallel
+```
+
+### Replay benchmark
+A new replay benchmark target and source file were added. The benchmark was updated several times to match the `HyperliquidCsvReader` interface, align with `ReplayRunner`, and handle the fact that the current fixture is very small.
+
+Final replay benchmark command:
+
+```powershell
+.\build\bench\Release\benchmark_replay.exe
+```
+
+Current replay benchmark status:
+- The executable builds and runs successfully.
+- The current benchmark output is valid as a smoke test.
+- The current fixture is too small to produce a representative replay throughput measurement.
+- A larger historical CSV fixture is still needed for meaningful scaling and Phase 9 performance tracking.
+
+## CI and formatting work
+CI failed on `clang-format` violations in `bench/benchmark_replay.cpp` and `bench/benchmark_order_book.cpp`. The fix was to run `clang-format` directly on Windows using the full executable path, then commit the formatting-only change.
+
+Windows PowerShell command used to format benchmark files:
+
+```powershell
+& "C:\Program Files\LLVM\bin\clang-format.exe" -style=file -i bench/benchmark_replay.cpp bench/benchmark_order_book.cpp
+```
+
+Alternative Visual Studio LLVM path if LLVM is not installed separately:
+
+```powershell
+& "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\Llvm\x64\bin\clang-format.exe" -style=file -i bench/benchmark_replay.cpp bench/benchmark_order_book.cpp
+```
+
+Follow-up commit and push commands:
+
+```powershell
+git add bench/benchmark_replay.cpp bench/benchmark_order_book.cpp
+git commit -m "Format benchmark sources"
+git push origin main
+```
+
+## Git workflow cleanup
+A merge was in progress after local and remote branches diverged. The merge was concluded first, then local work was split into separate commits for cleaner history.
+
+Commands used for the cleanup flow:
+
+```powershell
+git commit -m "Merge origin/main into main"
+git add CMakeLists.txt bench/benchmark_order_book.cpp
+git commit -m "Adjust CMake and order book benchmark"
+git add bench/CMakeLists.txt bench/benchmark_replay.cpp
+git commit -m "Add replay benchmark"
+```
+
+History verification command:
+
+```powershell
+git log --oneline --graph --decorate -10
+```
+
+## Key outcomes
+- CI workflow and formatting-related issues were addressed.
+- Benchmark infrastructure now includes both order book and replay benchmark executables.
+- Replay benchmark integration is complete at the code level.
+- Replay benchmark measurement quality is currently limited by fixture size, not by the benchmark harness itself.
+- Repository history was cleaned up into a sensible merge-plus-follow-up-commits sequence.
+
+## Next steps
+- Replace the replay fixture with a much larger CSV sample.
+- Reintroduce multi-size replay benchmark arguments once the fixture supports them.
+- Re-run benchmarks and capture a more representative replay throughput baseline.
+- Verify the GitHub Actions run is fully green after the formatting commit.
