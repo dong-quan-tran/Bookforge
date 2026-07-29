@@ -19,8 +19,6 @@ Around that core, the repository adds:
 
 The design goal is correctness first, with a structure that also supports replay, feature extraction, benchmarking, and Python interop.
 
-***
-
 ## Architecture diagrams
 
 ### End-to-end replay pipeline
@@ -77,8 +75,6 @@ Typical data flow:
 
 This structure keeps data ingestion, replay orchestration, and matching logic separate while still making the full system straightforward to test and benchmark.
 
-***
-
 ## Core data structures
 
 ### Order
@@ -128,8 +124,6 @@ It exposes:
 - mid-price / spread,
 - depth snapshots.
 
-***
-
 ## Matching priority rules
 
 Bookforge follows price-time priority, which is the standard matching rule for a modern limit order book.
@@ -147,8 +141,6 @@ This means an incoming marketable buy order matches the lowest available ask fir
 When multiple resting orders exist at the same price, they are executed in arrival order, first in first out.
 
 Any operation that effectively replaces an order should be treated as a loss of queue priority unless explicitly designed otherwise.
-
-***
 
 ## Book invariants
 
@@ -185,8 +177,6 @@ The following invariants should always hold after every mutating operation:
 
 These invariants are the core correctness contract for tests, replay logic, and Python bindings.
 
-***
-
 ## Empty book behavior
 
 The book must handle missing liquidity explicitly.
@@ -198,8 +188,6 @@ Rules:
 - if either side is empty, `spread` is unavailable.
 
 This avoids inventing synthetic prices and keeps analytics behavior explicit.
-
-***
 
 ## Ownership and lifetime rules
 
@@ -232,8 +220,6 @@ A replace operation should be treated as cancel-and-reinsert semantics for prior
 - replacing at the same price also loses priority in the current design,
 - the replaced order should no longer occupy its previous queue position.
 
-***
-
 ## Replay and adapters
 
 Replay support is a first-class part of the architecture.
@@ -259,8 +245,6 @@ Replay support is a first-class part of the architecture.
 
 This keeps exchange-specific input semantics out of the core matching engine.
 
-***
-
 ## Derived market state
 
 The book exposes several derived values:
@@ -271,8 +255,6 @@ The book exposes several derived values:
 - **Spread**: `best_ask - best_bid`.
 
 These values are only defined when both sides of the book are non-empty.
-
-***
 
 ## Benchmarking
 
@@ -296,8 +278,6 @@ This benchmark is intended to catch regressions in the hot paths of the order bo
 
 Its current value is primarily as an integration and smoke benchmark. For more representative throughput measurements, it should use a larger replay fixture that better reflects realistic event volume.
 
-***
-
 ## Python bindings
 
 The Python extension is a thin interface over the C++ core.
@@ -310,8 +290,6 @@ The design goal is to keep matching, replay, and performance-sensitive logic in 
 
 The C++ implementation remains the authoritative source of behavior. Python bindings should expose functionality, not duplicate matching logic.
 
-***
-
 ## Engineering controls
 
 The repository includes engineering controls intended to keep the project maintainable and CI-friendly.
@@ -323,8 +301,6 @@ Current controls include:
 - local / CI consistency work such as `.gitattributes` handling.
 
 These controls support the broader goal of moving the repository from “works” to “serious project.”
-
-***
 
 ## Why this structure
 
