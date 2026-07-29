@@ -123,3 +123,48 @@ def test_missing_file_returns_404(tmp_path: Path):
     missing = tmp_path / "missing.csv"
     response = client.get("/api/replay/summary", params={"features_csv": str(missing)})
     assert response.status_code == 404
+
+def test_feature_sample_offset_at_end_returns_empty(tmp_path: Path):
+    csv_path = _write_features_csv(tmp_path)
+    response = client.get(
+        "/api/features/sample",
+        params={"features_csv": str(csv_path), "limit": 2, "offset": 3},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["returned_count"] == 0
+    assert body["rows"] == []
+
+
+def test_feature_sample_limit_larger_than_dataset_returns_remaining_rows(tmp_path: Path):
+    csv_path = _write_features_csv(tmp_path)
+    response = client.get(
+        "/api/features/sample",
+        params={"features_csv": str(csv_path), "limit": 10, "offset": 1},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["returned_count"] == 2
+    assert body["rows"][0]["row_index"] == 1
+    assert body["rows"][1]["row_index"] == 2
+
+
+def test_snapshot_inspect_first_row(tmp_path: Path):
+    csv_path = _write_snapshots_csv(tmp_path)
+    response = client.get(
+        "/api/snapshots/inspect",
+        params={"snapshot_csv": str(csv_path), "row_index": 0},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["row_index"] == 0
+    assert body["best_bid"] == 99.5
+    assert body["best_ask"] == 100.5
+    assert body["bids"][0]["price"] == 99.5
+    assert body["asks"][0]["price"] == 100.5
+
+
+def test_missing_snapshot_file_returns_404(tmp_path: Path):
+    missing = tmp_path / "missing_snapshots.csv"
+    response = client.get("/api/snapshots/sample", params={"snapshot_csv": str(missing)})
+    assert response.status_code == 404
