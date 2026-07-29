@@ -2,7 +2,7 @@
 
 ## Overview
 
-Bookforge uses a price-time priority limit order book implemented in C++20 as the core systems layer.
+Bookforge is a C++20 limit-order-book system centered on a price-time priority matching engine, with replay, benchmarking, and Python bindings layered around the core.
 
 The core is responsible for:
 - representing orders and price levels,
@@ -11,9 +11,27 @@ The core is responsible for:
 - supporting add / cancel / execute / replace style operations,
 - exposing top-of-book and depth queries.
 
-The design goal is correctness first, with a structure that can later support replay, feature extraction, benchmarking, and Python bindings.
+Around that core, the repository adds:
+- replay ingestion from external CSV data,
+- adapter-driven event translation into the matching engine,
+- benchmark targets for isolated operations and end-to-end replay,
+- Python bindings for scripting and downstream tooling.
 
----
+The design goal is correctness first, with a structure that also supports replay, feature extraction, benchmarking, and Python interop.
+
+***
+
+## System pipeline
+
+Bookforge is organized as a small pipeline around a C++20 matching-engine core.
+
+Typical data flow:
+
+`CSV / replay data -> HyperliquidCsvReader -> ReplayRunner -> IReplayAdapter -> HyperliquidMatchingEngineAdapter -> MatchingEngine -> snapshots / metrics / benchmarks`
+
+This structure keeps data ingestion, replay orchestration, and matching logic separate while still making the full system straightforward to test and benchmark.
+
+***
 
 ## Core data structures
 
@@ -22,13 +40,13 @@ The design goal is correctness first, with a structure that can later support re
 `Order` is the atomic unit stored by the book.
 
 It represents:
-- `id`: unique order identifier
-- `participant_id`: owner / participant identity
-- `side`: buy or sell
-- `price`: limit price
-- `quantity`: remaining live quantity
-- `timestamp`: arrival time used for priority
-- `self-trade-prevention`: optional STP policy metadata
+- `id`: unique order identifier,
+- `participant_id`: owner / participant identity,
+- `side`: buy or sell,
+- `price`: limit price,
+- `quantity`: remaining live quantity,
+- `timestamp`: arrival time used for priority,
+- `self-trade-prevention`: optional STP policy metadata.
 
 An `Order` should always represent the current remaining quantity, not the original submitted quantity, once partial executions begin.
 
@@ -50,9 +68,9 @@ Conceptually:
 ### OrderBook
 
 `OrderBook` owns the two-sided market state:
-- bids
-- asks
-- order lookup/index structures
+- bids,
+- asks,
+- order lookup / index structures.
 
 It exposes:
 - order insertion,
@@ -64,7 +82,7 @@ It exposes:
 - mid-price / spread,
 - depth snapshots.
 
----
+***
 
 ## Matching priority rules
 
@@ -84,7 +102,7 @@ When multiple resting orders exist at the same price, they are executed in arriv
 
 Any operation that effectively replaces an order should be treated as a loss of queue priority unless explicitly designed otherwise.
 
----
+***
 
 ## Book invariants
 
@@ -119,9 +137,9 @@ The following invariants should always hold after every mutating operation:
 8. **No zero-quantity resting orders**
    - A live order in the book must have strictly positive remaining quantity.
 
-These invariants are the core correctness contract for tests, replay logic, and later Python bindings.
+These invariants are the core correctness contract for tests, replay logic, and Python bindings.
 
----
+***
 
 ## Empty book behavior
 
@@ -135,7 +153,7 @@ Rules:
 
 This avoids inventing synthetic prices and keeps analytics behavior explicit.
 
----
+***
 
 ## Ownership and lifetime rules
 
@@ -144,7 +162,7 @@ Order ownership should be simple and explicit.
 ### Live lifetime
 
 An order is considered live only if:
-- it exists in the order lookup/index, and
+- it exists in the order lookup / index, and
 - it is present in exactly one resting queue at one price level.
 
 ### Removal rules
@@ -168,20 +186,99 @@ A replace operation should be treated as cancel-and-reinsert semantics for prior
 - replacing at the same price also loses priority in the current design,
 - the replaced order should no longer occupy its previous queue position.
 
----
+***
+
+## Replay and adapters
+
+Replay support is a first-class part of the architecture.
+
+### HyperliquidCsvReader
+
+`HyperliquidCsvReader` loads external event data from CSV into `ExternalOrderEvent` records. It is intentionally separate from the matching engine so that replay fixtures, tests, and benchmarks can share the same input layer.
+
+### ReplayRunner
+
+`ReplayRunner` owns event iteration and replay control. It supports configurable replay bounds and logging controls, including:
+- `start_offset` for skipping the first N events,
+- `max_events` for bounding replay length,
+- progress and summary logging toggles.
+
+### IReplayAdapter
+
+`IReplayAdapter` decouples replay input from book execution. This abstraction allows the same replay driver to target the matching engine, metrics collection, or future alternative sinks without changing replay orchestration.
+
+### HyperliquidMatchingEngineAdapter
+
+`HyperliquidMatchingEngineAdapter` translates external events into matching-engine actions. New order events are submitted into the book, while other event types are tracked for replay accounting and adapter metrics.
+
+This keeps exchange-specific input semantics out of the core matching engine.
+
+***
 
 ## Derived market state
 
 The book exposes several derived values:
 
-- **Best bid**: highest live bid price
-- **Best ask**: lowest live ask price
-- **Mid-price**: `(best_bid + best_ask) / 2`
-- **Spread**: `best_ask - best_bid`
+- **Best bid**: highest live bid price,
+- **Best ask**: lowest live ask price,
+- **Mid-price**: `(best_bid + best_ask) / 2`,
+- **Spread**: `best_ask - best_bid`.
 
 These values are only defined when both sides of the book are non-empty.
 
----
+***
+
+## Benchmarking
+
+Bookforge includes benchmark targets for both isolated operations and replay throughput.
+
+### benchmark_order_book
+
+`benchmark_order_book` measures focused matching-engine operations such as:
+- add order,
+- cancel order,
+- execute top order,
+- reduce quantity,
+- replace at same price,
+- replace at new price.
+
+This benchmark is intended to catch regressions in the hot paths of the order book itself.
+
+### benchmark_replay
+
+`benchmark_replay` measures replay throughput over a loaded fixture using the CSV reader, replay runner, and replay adapter stack.
+
+Its current value is primarily as an integration and smoke benchmark. For more representative throughput measurements, it should use a larger replay fixture that better reflects realistic event volume.
+
+***
+
+## Python bindings
+
+The Python extension is a thin interface over the C++ core.
+
+The design goal is to keep matching, replay, and performance-sensitive logic in C++, while exposing selected functionality to Python for:
+- scripting,
+- experiments,
+- analysis workflows,
+- downstream tooling.
+
+The C++ implementation remains the authoritative source of behavior. Python bindings should expose functionality, not duplicate matching logic.
+
+***
+
+## Engineering controls
+
+The repository includes engineering controls intended to keep the project maintainable and CI-friendly.
+
+Current controls include:
+- GitHub Actions CI,
+- `clang-format` enforcement for C++ sources,
+- linting and formatting checks,
+- local / CI consistency work such as `.gitattributes` handling.
+
+These controls support the broader goal of moving the repository from “works” to “serious project.”
+
+***
 
 ## Why this structure
 
@@ -189,6 +286,8 @@ This design is a good fit for Bookforge because it supports:
 - deterministic testing,
 - realistic price-time priority behavior,
 - clean replay integration,
-- future feature extraction like spread, imbalance, and order flow metrics.
+- feature extraction such as spread, imbalance, and order-flow style metrics,
+- benchmark-driven performance tracking,
+- Python-based experimentation without moving core logic out of C++.
 
-It is also interview-friendly because the invariants and trade-offs can be explained clearly without hiding behind framework complexity.
+It is also interview-friendly because the invariants, boundaries, and trade-offs can be explained clearly without hiding behind framework complexity.
