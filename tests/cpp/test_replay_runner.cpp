@@ -167,3 +167,78 @@ TEST(ReplayRunnerTest, OffsetPastEndProcessesNothing) {
     EXPECT_FALSE(engine.Book().GetBestBid().has_value());
     EXPECT_FALSE(engine.Book().GetBestAsk().has_value());
 }
+
+TEST(ReplayRunnerTest, MaxEventsZeroProcessesAllEvents) {
+    std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.00, 0.01000, 1, "open", 1),
+        MakeEvent(EventType::New, true, 100.50, 0.01000, 1, "open", 2),
+        MakeEvent(EventType::Reject, false, 101.00, 0.02000, 3, "perpMarginRejected", 3),
+    };
+
+    ReplayConfig config;
+    config.start_offset = 0;
+    config.max_events = 0;
+    config.log_every_n = 0;
+    config.log_summary = false;
+    config.log_errors = false;
+    config.strict_mode = false;
+
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+    ReplayRunner runner(config);
+
+    EXPECT_TRUE(runner.Run(adapter, events));
+
+    const auto &stats = adapter.Stats();
+    EXPECT_EQ(stats.totalEvents, 3u);
+    EXPECT_EQ(stats.newCount, 2u);
+    EXPECT_EQ(stats.rejectCount, 1u);
+}
+
+TEST(ReplayRunnerTest, EmptyInputSucceedsAndProcessesNothing) {
+    std::vector<ExternalOrderEvent> events;
+
+    ReplayConfig config;
+    config.start_offset = 0;
+    config.max_events = 0;
+    config.log_every_n = 0;
+    config.log_summary = false;
+    config.log_errors = false;
+    config.strict_mode = false;
+
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+    ReplayRunner runner(config);
+
+    EXPECT_TRUE(runner.Run(adapter, events));
+
+    const auto &stats = adapter.Stats();
+    EXPECT_EQ(stats.totalEvents, 0u);
+    EXPECT_EQ(stats.newCount, 0u);
+    EXPECT_EQ(stats.generatedTrades, 0u);
+}
+
+TEST(ReplayRunnerTest, StartOffsetAtEndProcessesNothing) {
+    std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.00, 0.01000, 1, "open", 1),
+        MakeEvent(EventType::New, true, 100.50, 0.01000, 1, "open", 2),
+    };
+
+    ReplayConfig config;
+    config.start_offset = events.size();
+    config.max_events = 10;
+    config.log_every_n = 0;
+    config.log_summary = false;
+    config.log_errors = false;
+    config.strict_mode = false;
+
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+    ReplayRunner runner(config);
+
+    EXPECT_TRUE(runner.Run(adapter, events));
+
+    const auto &stats = adapter.Stats();
+    EXPECT_EQ(stats.totalEvents, 0u);
+    EXPECT_EQ(stats.submittedOrders, 0u);
+}
