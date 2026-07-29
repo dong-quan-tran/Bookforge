@@ -314,8 +314,8 @@ Create a lightweight surface for inspection and demos.
 Raise the repo from “works” to a serious, maintainable project.
 
 ### Tasks
-- [ ] Reach 50+ Google Tests.
-- [ ] Reach 50+ Pytest cases.
+- [x] Reach 50+ Google Tests.
+- [x] Reach 50+ Pytest cases.
 - [x] Add C++ benchmarks.
 - [x] Add replay throughput benchmark.
 - [x] Add profiling notes.
@@ -338,7 +338,7 @@ Raise the repo from “works” to a serious, maintainable project.
 - [x] README updated to reflect benchmark coverage and current project scope.
 - [x] `docs/INTERVIEW_PREP.md` still needs to be finished.
 - [x] Architecture diagrams still need to be added.
-- [ ] Milestone release still needs to be tagged.
+- [x] Milestone release still needs to be tagged.
 
 ---
 
@@ -365,6 +365,11 @@ These are optional but high-value if time allows.
 - [ ] Add benchmark tables to docs
 - [ ] Add architecture decision records (ADRs)
 
+
+### Current status
+- [x] Added a synthetic market event generator CLI.
+- [x] Generator emits replay-compatible CSV fixtures with deterministic seeding.
+- [x] Output can be used for replay benchmarks, demos, and feature export workflows.
 ---
 
 ## Suggested implementation order right now
