@@ -362,7 +362,7 @@ These are optional but high-value if time allows.
 
 ### Product / presentation
 - [x] Add a polished demo scenario for interviews
-- [ ] Add benchmark tables to docs
+- [x] Add benchmark tables to docs
 - [x] Add architecture decision records (ADRs)
 
 
