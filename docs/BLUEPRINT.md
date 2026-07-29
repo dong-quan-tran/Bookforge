@@ -347,7 +347,7 @@ Raise the repo from “works” to a serious, maintainable project.
 These are optional but high-value if time allows.
 
 ### Research / simulation
-- [ ] Add synthetic market event generator
+- [x] Add synthetic market event generator
 - [ ] Add agent-based simulation mode
 - [ ] Allow user-injected orders during historical replay
 - [ ] Compare passive vs aggressive strategy behavior under replay

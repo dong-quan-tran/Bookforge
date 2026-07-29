@@ -273,6 +273,18 @@ npm run dev
 docker compose up --build
 ```
 
+### Generate a replay fixture
+
+#### Windows PowerShell
+```powershell
+python tools\generate_replay_fixture.py --events 10000 --base-price 100.00 --output tests\fixtures\hyperliquid_replay_fixture_large.csv
+```
+
+#### macOS / Linux
+```bash
+python tools/generate_replay_fixture.py --events 10000 --base-price 100.00 --output tests/fixtures/hyperliquid_replay_fixture_large.csv
+```
+
 ### Generate a synthetic replay fixture
 
 #### Windows PowerShell
