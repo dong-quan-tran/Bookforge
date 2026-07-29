@@ -273,6 +273,18 @@ npm run dev
 docker compose up --build
 ```
 
+### Generate a synthetic replay fixture
+
+#### Windows PowerShell
+```powershell
+python tools\generate_synthetic_market_events.py --events 10000 --base-price 100000 --tick-size 0.5 --base-spread-ticks 2 --min-size 0.001 --max-size 0.05 --seed 42 --output data\synthetic_replay_fixture.csv
+```
+
+#### macOS / Linux
+```bash
+python tools/generate_synthetic_market_events.py --events 10000 --base-price 100000 --tick-size 0.5 --base-spread-ticks 2 --min-size 0.001 --max-size 0.05 --seed 42 --output data/synthetic_replay_fixture.csv
+```
+
 ## Formatting
 
 ### Python
