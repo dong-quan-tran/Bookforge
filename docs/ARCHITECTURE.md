@@ -21,6 +21,52 @@ The design goal is correctness first, with a structure that also supports replay
 
 ***
 
+## Architecture diagrams
+
+### End-to-end replay pipeline
+
+```mermaid
+flowchart LR
+    A[Replay CSV / fixture data] --> B[HyperliquidCsvReader]
+    B --> C[vector<ExternalOrderEvent>]
+    C --> D[ReplayRunner]
+    D --> E[IReplayAdapter]
+    E --> F[HyperliquidMatchingEngineAdapter]
+    F --> G[MatchingEngine]
+    G --> H[OrderBook]
+    G --> I[Trades / execution results]
+    G --> J[SnapshotBuilder / FeatureBuilder]
+    J --> K[CSV / snapshot / research outputs]
+```
+
+### Core engine structure
+
+```mermaid
+flowchart TD
+    A[MatchingEngine] --> B[OrderBook]
+    B --> C[Bid side price levels]
+    B --> D[Ask side price levels]
+    C --> E[FIFO orders at each price]
+    D --> F[FIFO orders at each price]
+    A --> G[MatchLimitOrder]
+    A --> H[Cancel / reduce / replace flows]
+    A --> I[Trade generation]
+```
+
+### Replay control flow
+
+```mermaid
+flowchart TD
+    A[ReplayConfig] --> B[ReplayRunner]
+    C[Event vector] --> B
+    B --> D{Within bounds?}
+    D -- Yes --> E[adapter.OnEvent(events[i])]
+    D -- No --> F[Stop replay]
+    E --> G[Update metrics / counters]
+    G --> H[Next event]
+    H --> D
+```
+
 ## System pipeline
 
 Bookforge is organized as a small pipeline around a C++20 matching-engine core.
