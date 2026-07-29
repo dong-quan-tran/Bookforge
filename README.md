@@ -35,6 +35,7 @@ Bookforge currently supports:
 - A **Python dataset and modeling layer** for training short-horizon predictive baselines.
 - **Walk-forward evaluation**, **feature importance**, optional **SHAP analysis**, and **MLflow tracking**.
 - A **FastAPI backend** and **React/Vite dashboard** for viewing replay summaries and feature samples.
+- **C++ and Python benchmarks/tests** that keep the core engine and replay pipeline honest.
 
 ## Key features
 
@@ -45,6 +46,7 @@ Bookforge currently supports:
 - Snapshot builder, serializer, deserializer, and comparator
 - Feature extraction pipeline
 - GoogleTest coverage for core engine, replay, snapshot, and feature logic
+- Google Benchmark coverage for order-book hot paths and replay throughput
 
 ### Python research layer
 - Feature CSV loading and validation
@@ -69,6 +71,12 @@ Bookforge currently supports:
   - depth imbalance
 - Docker Compose support for local demo startup
 
+## Benchmarking
+
+Bookforge includes a microbenchmark for order-book hot paths and a replay benchmark for end-to-end event processing.
+
+The replay benchmark uses a larger synthetic CSV fixture so throughput numbers are meaningful rather than dominated by benchmark overhead. On the current large fixture, the replay benchmark reports roughly **4.4M–4.7M events/sec** in Release mode on Windows, which is a useful baseline for future changes.
+
 ## Why it matters
 
 Bookforge is meant to demonstrate the kind of end-to-end thinking that shows up in quant and market-data engineering work:
@@ -91,6 +99,7 @@ In practice, that means the repo can be used to:
 - C++20
 - CMake
 - GoogleTest
+- Google Benchmark
 - clang-format
 
 ### Python / data tooling
@@ -199,6 +208,18 @@ PYTHONPATH=python python -m pytest tests/python -q
 #### macOS / Linux
 ```bash
 ./build/feature_export_main --input data/btc_orders_sample_2025-12-15-12.csv --output output/features.csv --symbol BTCUSDT.P --snapshot-depth 10 --imbalance-depth 10 --ofi-depth 10 --rolling-window 50
+```
+
+### Benchmark replay throughput
+
+#### Windows PowerShell
+```powershell
+.\build\bench\Release\benchmark_replay.exe
+```
+
+#### macOS / Linux
+```bash
+./build/bench/benchmark_replay
 ```
 
 ### Train a baseline model
