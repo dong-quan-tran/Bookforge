@@ -224,5 +224,14 @@ if(BOOKFORGE_ENABLE_BENCHMARKS)
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googlebenchmark)
 
+  set(BOOKFORGE_BENCH_REPLAY_FIXTURE
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hyperliquid_replay_fixture_large.csv"
+  )
+  cmake_path(NORMAL_PATH BOOKFORGE_BENCH_REPLAY_FIXTURE)
+
   add_subdirectory(bench)
+
+  target_compile_definitions(benchmark_replay PRIVATE
+    BOOKFORGE_BENCH_FIXTURE_FILE="${BOOKFORGE_BENCH_REPLAY_FIXTURE}"
+  )
 endif()

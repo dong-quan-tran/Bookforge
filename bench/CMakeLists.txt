@@ -27,7 +27,3 @@ target_link_libraries(benchmark_replay PRIVATE
 )
 
 target_compile_features(benchmark_replay PRIVATE cxx_std_20)
-
-target_compile_definitions(benchmark_replay PRIVATE
-  BOOKFORGE_BENCH_FIXTURE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/../tests/fixtures/hyperliquid_replay_fixture_basic.csv"
-)
