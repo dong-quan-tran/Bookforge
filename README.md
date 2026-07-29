@@ -2,17 +2,17 @@
 
 Bookforge is a hybrid **C++ + Python** market microstructure project for studying how a modern limit order book behaves under replayed market event flow.
 
-At its core is a low-latency **C++20 matching engine and price-time-priority order book** with deterministic replay infrastructure, snapshot export, feature export, and regression-tested historical event playback. On top of that, the project includes a Python research layer for dataset construction, short-horizon machine learning, walk-forward evaluation, experiment tracking with MLflow, and a lightweight **FastAPI + React dashboard** for inspection and demos.
+At its core is a low-latency **C++20 matching engine** with a price-time-priority order book, deterministic replay infrastructure, snapshot export, feature export, and regression-tested historical event playback. On top of that, the repository includes a Python research layer for dataset construction, short-horizon machine learning, walk-forward evaluation, experiment tracking with MLflow, and a lightweight **FastAPI + React dashboard** for inspection and demos.
 
 ## Purpose
 
-Bookforge is designed to combine **systems engineering** and **market microstructure research** in one repository.
+Bookforge combines **systems engineering** and **market microstructure research** in one repository.
 
 Most portfolio projects lean heavily toward either:
 - machine learning without strong systems depth, or
 - systems code without a research workflow built on top of it.
 
-Bookforge aims to bridge that gap by providing:
+Bookforge bridges that gap with:
 - a replayable order-book and matching-engine core,
 - reproducible snapshot and feature export,
 - a Python research workflow for modeling and evaluation,
@@ -22,54 +22,51 @@ This makes it useful both as:
 - a serious **quant SWE / quant research portfolio project**, and
 - a practical sandbox for **short-horizon microstructure experiments**.
 
-## What it does
+## Highlights
 
-Bookforge currently supports:
+- C++20 matching engine and price-time-priority order book.
+- Deterministic replay pipeline for external market-event playback.
+- Hyperliquid-style CSV ingestion path for replay experiments.
+- Snapshot export and comparison for reproducibility and checkpoint validation.
+- Feature export for microstructure research, including spread, mid-price, depth imbalance, and OFI.
+- Python dataset and modeling layer for training short-horizon predictive baselines.
+- Walk-forward evaluation, feature importance export, optional SHAP analysis, and MLflow tracking.
+- FastAPI backend and React/Vite dashboard for replay summaries and feature samples.
+- C++ and Python benchmarks/tests that keep the core engine and replay pipeline honest.
 
-- A **price-time-priority order book** with FIFO behavior at each price level.
-- A **matching engine** that handles passive insertion, aggressive matching, partial fills, and multi-level sweeps.
-- A **deterministic replay pipeline** for external market-event playback.
-- A **Hyperliquid-style CSV ingestion path** for replay experiments.
-- **Snapshot export and comparison** for reproducibility and checkpoint validation.
-- **Feature export** for microstructure research, including spread, mid-price, depth imbalance, and OFI.
-- A **Python dataset and modeling layer** for training short-horizon predictive baselines.
-- **Walk-forward evaluation**, **feature importance**, optional **SHAP analysis**, and **MLflow tracking**.
-- A **FastAPI backend** and **React/Vite dashboard** for viewing replay summaries and feature samples.
-- **C++ and Python benchmarks/tests** that keep the core engine and replay pipeline honest.
-
-## Key features
+## Core areas
 
 ### C++ core
-- C++20 matching engine
-- Price-time-priority order book
-- Replay runner and replay adapter architecture
-- Snapshot builder, serializer, deserializer, and comparator
-- Feature extraction pipeline
-- GoogleTest coverage for core engine, replay, snapshot, and feature logic
-- Google Benchmark coverage for order-book hot paths and replay throughput
+- C++20 matching engine.
+- Price-time-priority order book.
+- Replay runner and replay adapter architecture.
+- Snapshot builder, serializer, deserializer, and comparator.
+- Feature extraction pipeline.
+- GoogleTest coverage for core engine, replay, snapshot, and feature logic.
+- Google Benchmark coverage for order-book hot paths and replay throughput.
 
 ### Python research layer
-- Feature CSV loading and validation
-- Dataset construction utilities
-- Label generation
-- Baseline model training with XGBoost
-- Chronological holdout evaluation
-- Walk-forward validation
-- Feature importance export
-- Optional SHAP analysis
-- MLflow experiment tracking
-- Pytest coverage for Python-side utilities and API behavior
+- Feature CSV loading and validation.
+- Dataset construction utilities.
+- Label generation.
+- Baseline model training with XGBoost.
+- Chronological holdout evaluation.
+- Walk-forward validation.
+- Feature importance export.
+- Optional SHAP analysis.
+- MLflow experiment tracking.
+- Pytest coverage for Python-side utilities and API behavior.
 
 ### Demo layer
-- FastAPI service for replay inspection
-- Replay summary endpoint
-- Feature sample retrieval endpoint
+- FastAPI service for replay inspection.
+- Replay summary endpoint.
+- Feature sample retrieval endpoint.
 - React dashboard with charts for:
   - spread
   - mid-price
   - L1 bid/ask depth
   - depth imbalance
-- Docker Compose support for local demo startup
+- Docker Compose support for local demo startup.
 
 ## Benchmarking
 
