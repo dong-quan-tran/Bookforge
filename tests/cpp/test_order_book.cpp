@@ -358,3 +358,68 @@ TEST(OrderBookTest, ReplaceOrderLosesPriorityAtNewPrice) {
     EXPECT_FALSE(book.CancelOrder(2));
     EXPECT_TRUE(book.CancelOrder(1));
 }
+
+TEST(OrderBookTest, CancelOneOfTwoOrdersAtSameLevelKeepsLevelWithRemainingVolume) {
+    OrderBook book;
+    EXPECT_TRUE(book.AddOrder(MakeOrder(1, 1, Side::Buy, 100.00, 10, 1)));
+    EXPECT_TRUE(book.AddOrder(MakeOrder(2, 2, Side::Buy, 100.00, 15, 2)));
+
+    EXPECT_TRUE(book.CancelOrder(1));
+
+    auto volume = book.GetLevelVolume(Side::Buy, 100.00);
+    ASSERT_TRUE(volume.has_value());
+    EXPECT_EQ(*volume, 15);
+
+    auto best_bid = book.GetBestBid();
+    ASSERT_TRUE(best_bid.has_value());
+    EXPECT_DOUBLE_EQ(*best_bid, 100.00);
+}
+
+TEST(OrderBookTest, ReduceOrderQuantityToOneUpdatesAggregateVolume) {
+    OrderBook book;
+    EXPECT_TRUE(book.AddOrder(MakeOrder(1, 1, Side::Sell, 101.00, 10, 1)));
+    EXPECT_TRUE(book.ReduceOrderQuantity(1, 1));
+
+    auto volume = book.GetLevelVolume(Side::Sell, 101.00);
+    ASSERT_TRUE(volume.has_value());
+    EXPECT_EQ(*volume, 1);
+}
+
+TEST(OrderBookTest, ReplaceOrderSamePriceUpdatesQuantityAndKeepsLevel) {
+    OrderBook book;
+    EXPECT_TRUE(book.AddOrder(MakeOrder(1, 1, Side::Sell, 101.00, 10, 1)));
+
+    EXPECT_TRUE(book.ReplaceOrder(1, 101.00, 6, 2));
+
+    auto volume = book.GetLevelVolume(Side::Sell, 101.00);
+    ASSERT_TRUE(volume.has_value());
+    EXPECT_EQ(*volume, 6);
+
+    auto best_ask = book.GetBestAsk();
+    ASSERT_TRUE(best_ask.has_value());
+    EXPECT_DOUBLE_EQ(*best_ask, 101.00);
+}
+
+TEST(OrderBookTest, ReplaceOrderToWorseBidUpdatesBestBid) {
+    OrderBook book;
+    EXPECT_TRUE(book.AddOrder(MakeOrder(1, 1, Side::Buy, 101.00, 10, 1)));
+    EXPECT_TRUE(book.AddOrder(MakeOrder(2, 2, Side::Buy, 100.00, 20, 2)));
+
+    EXPECT_TRUE(book.ReplaceOrder(1, 99.50, 10, 3));
+
+    auto best_bid = book.GetBestBid();
+    ASSERT_TRUE(best_bid.has_value());
+    EXPECT_DOUBLE_EQ(*best_bid, 100.00);
+}
+
+TEST(OrderBookTest, ReplaceOrderToWorseAskUpdatesBestAsk) {
+    OrderBook book;
+    EXPECT_TRUE(book.AddOrder(MakeOrder(1, 1, Side::Sell, 100.50, 10, 1)));
+    EXPECT_TRUE(book.AddOrder(MakeOrder(2, 2, Side::Sell, 101.00, 20, 2)));
+
+    EXPECT_TRUE(book.ReplaceOrder(1, 101.50, 10, 3));
+
+    auto best_ask = book.GetBestAsk();
+    ASSERT_TRUE(best_ask.has_value());
+    EXPECT_DOUBLE_EQ(*best_ask, 101.00);
+}
