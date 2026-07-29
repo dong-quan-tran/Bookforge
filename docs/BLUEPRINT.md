@@ -361,9 +361,9 @@ These are optional but high-value if time allows.
 - [ ] Add binary historical data reader for higher throughput
 
 ### Product / presentation
-- [ ] Add a polished demo scenario for interviews
+- [x] Add a polished demo scenario for interviews
 - [ ] Add benchmark tables to docs
-- [ ] Add architecture decision records (ADRs)
+- [x] Add architecture decision records (ADRs)
 
 
 ### Current status
