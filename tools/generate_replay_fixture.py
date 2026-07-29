@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import argparse
 import csv
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
-
 
 HEADER = ["ts", "limitPx", "sz", "isAsk", "statusId", "status", "eventType"]
 
