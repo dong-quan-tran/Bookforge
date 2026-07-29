@@ -330,6 +330,7 @@ Additional design and reference material lives in:
 - `docs/SNAPSHOT_SCHEMA.md`
 - `docs/INTERVIEW_PREP.md`
 - `docs/WEEK_BY_WEEK.md`
+- `docs/adr/` — architecture decision records for major design choices
 
 ## Author
 
