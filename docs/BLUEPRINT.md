@@ -311,20 +311,27 @@ Create a lightweight surface for inspection and demos.
 ## Phase 9 — Performance and engineering polish
 
 ### Goals
-Raise the repo from “works” to “serious project.”
+Raise the repo from “works” to a serious, maintainable project.
 
 ### Tasks
-- [ ] Reach 50+ Google Tests
-- [ ] Reach 50+ Pytest cases
-- [ ] Add C++ benchmarks
-- [ ] Add replay throughput benchmark
-- [ ] Add profiling notes
-- [ ] Add GitHub Actions CI
-- [ ] Add formatting / linting rules
-- [ ] Improve README and docs
-- [ ] Finish `docs/INTERVIEW_PREP.md`
-- [ ] Add architecture diagrams
-- [ ] Tag a clean milestone release
+- [ ] Reach 50+ Google Tests.
+- [ ] Reach 50+ Pytest cases.
+- [x] Add C++ benchmarks.
+- [x] Add replay throughput benchmark.
+- [x] Add profiling notes.
+- [x] Add GitHub Actions CI.
+- [x] Add formatting / linting rules.
+- [ ] Improve README and docs.
+- [ ] Finish `docs/INTERVIEW_PREP.md`.
+- [ ] Add architecture diagrams.
+- [ ] Tag a clean milestone release.
+
+### Current status
+- [x] `benchmark_order_book` is built and running.
+- [x] `benchmark_replay` is built and running.
+- [x] CI formatting mismatch resolved with `clang-format`.
+- [x] Merge conflict resolved and history cleaned up into separate commits.
+- [ ] Replay benchmark fixture still needs to be expanded for meaningful throughput measurements.
 
 ---
 
