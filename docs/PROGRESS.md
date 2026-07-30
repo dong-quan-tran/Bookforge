@@ -1155,3 +1155,54 @@ Commits from July 28, 2026:
   - 50+ Pytest cases.
   - final release polish if needed.
 - Otherwise, treat `v0.1.0` as the Phase 9 milestone and move on to the next phase.
+
+# July 29, 2026 Progress Log
+
+Today’s work focused on pushing Bookforge’s replay tooling, documentation quality, and interview readiness forward in a coordinated way. The day started with simulation and replay improvements, moved through documentation and presentation work, and ended with cleanup, formatting, and blueprint updates.
+
+## Replay and simulation work
+
+The main systems change was extending replay support so historical runs can include scheduled injected orders. That work included replay adapter refactoring, test and CMake wiring cleanup, and added coverage for injected-order dispatch so the new path is exercised instead of remaining a loosely documented idea.
+
+A synthetic market event generator was also added to produce replay-compatible CSV fixtures with deterministic seeding. That generator makes it easier to create stable benchmark inputs, demo scenarios, and feature-export datasets without depending entirely on external historical data.
+
+## Documentation updates
+
+Several commits improved the project’s documentation layer so the repository explains itself more clearly to recruiters, interviewers, and collaborators. Architecture decision records were added, benchmark documentation was written, and the README was updated to describe the replay fixture generator and how it fits into the workflow.
+
+The architecture and interview-prep documents were then expanded in more depth. `INTERVIEW_PREP.md` now gives clearer answers on system design choices, market microstructure concepts, benchmark framing, trade-offs, and a tighter one-minute project pitch, while `ARCHITECTURE.md` now captures diagrams, invariants, replay flow, ownership rules, benchmarking intent, and Python binding boundaries.
+
+## Demo and presentation work
+
+The repo also gained a polished interview demo scenario, which strengthens the project’s presentation value beyond raw implementation. That matters because Bookforge is no longer just a matching-engine codebase; it now has a clearer story for showing deterministic replay, benchmarkability, and research-oriented outputs in a way that is easier to present live.
+
+The benchmark and architecture additions also improved how the project can be discussed in interviews. Instead of describing the repo only as “a C++ order book,” the material now supports a fuller explanation of correctness-first design, replayability, extensibility, and where future optimizations would fit.
+
+## Quality and maintenance
+
+A meaningful part of today’s work was repo hygiene. Python tests were formatted and Ruff violations were fixed, replay and test C++ sources were formatted with `clang-format`, and `.gitignore` was updated so build and test artifacts stay out of version control.
+
+Those cleanup commits are important because they reduce noise in future diffs and make the codebase feel more deliberate. Combined with the replay refactor, they also help keep CI and local development aligned instead of letting supporting infrastructure drift.
+
+## Blueprint status changes
+
+The Phase 10 stretch-goal checklist was updated to reflect what is now actually complete. In particular, user-injected orders during historical replay were marked done, and the current-status notes now explicitly mention replay-side scheduling abstractions, injected-order coverage, and the replay adapter’s expanded interface.
+
+That update also clarified what remains unfinished. Strategy comparison under replay and queue-position-aware experiments are still open, which gives the next round of work a cleaner handoff.
+
+## Commits completed today
+
+- Add synthetic market event generator
+- Update Phase 10 progress
+- Add replay fixture generator
+- Update readme with replay fixture generator
+- Add architecture decision records
+- Add interview demo scenario
+- Add benchmark documentation
+- Refactor replay adapter and CMake test wiring
+- Add injected-order replay coverage
+- Update gitignore for build and test artifacts
+- Format Python tests and fix Ruff violations
+- Format replay and test sources with clang-format
+- Expand interview prep and architecture docs
+- Update Phase 10 stretch goals checklist
