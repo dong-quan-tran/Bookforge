@@ -1,0 +1,74 @@
+# Strategy Replay Experiments
+
+## Goal
+
+Compare passive versus aggressive execution behavior under deterministic replay.
+
+## Scope
+
+This experiment uses replay plus scheduled injected orders to evaluate two simple execution styles against the same market stream:
+
+- **Passive**: post a limit order at or near the best bid / best ask and wait for fills.
+- **Aggressive**: cross the spread immediately to maximize fill certainty.
+
+The goal is not to build a full strategy framework yet. The goal is to create a small, reproducible experiment harness that can answer a practical microstructure question with clear metrics.
+
+## Initial experiment design
+
+### Inputs
+
+- Replay event stream from historical or synthetic CSV
+- Deterministic injected order schedule
+- Fixed parent order size
+- Configurable entry timestamps or replay offsets
+- Strategy mode: `passive` or `aggressive`
+
+### Passive behavior
+
+The passive version should:
+
+- submit a limit buy at best bid or a limit sell at best ask,
+- rest in the book,
+- measure whether and when it fills,
+- record remaining unfilled quantity if the replay window ends first.
+
+### Aggressive behavior
+
+The aggressive version should:
+
+- submit a marketable order that crosses the spread,
+- execute immediately against available resting liquidity,
+- measure execution price and total filled quantity,
+- record slippage or spread cost relative to a reference price.
+
+## Metrics
+
+Each replay trial should record:
+
+- fill rate,
+- filled quantity,
+- time to first fill,
+- time to complete fill,
+- average execution price,
+- mid-price at decision time,
+- spread at decision time,
+- implementation shortfall,
+- remaining quantity at replay end.
+
+## Output format
+
+A first version can write one CSV row per trial with fields such as:
+
+`strategy,timestamp,side,parent_qty,filled_qty,fill_rate,avg_px,decision_mid,decision_spread,time_to_first_fill_us,time_to_full_fill_us,remaining_qty,implementation_shortfall_bps`
+
+## Suggested implementation plan
+
+1. Add a small experiment runner that reuses replay and injected-order scheduling.
+2. Add a strategy enum for passive versus aggressive behavior.
+3. Capture per-trial metrics in a dedicated result struct.
+4. Write results to CSV for later analysis.
+5. Document a simple example command and expected outputs.
+
+## Notes
+
+This experiment is intentionally narrow. It should produce a usable baseline for later work such as queue-position-aware studies, richer execution tactics, or agent-based simulation.
