@@ -1,11 +1,11 @@
 #include "replay/StrategyExperiment.hpp"
 
-#include <catch2/catch_test_macros.hpp>
+#include <gtest/gtest.h>
 
 namespace bookforge {
 namespace {
 
-TEST_CASE("MakeInjectedOrder maps config fields into replay order") {
+TEST(StrategyExperimentTest, MakeInjectedOrderMapsConfigFieldsIntoReplayOrder) {
   StrategyExperimentConfig config;
   config.mode = StrategyMode::Passive;
   config.entry_offset = 42;
@@ -16,16 +16,16 @@ TEST_CASE("MakeInjectedOrder maps config fields into replay order") {
 
   const auto order = MakeInjectedOrder(config, "order-1", "p1");
 
-  REQUIRE(order.trigger_event_index == 42);
-  REQUIRE(order.timing == InjectedOrderTiming::AfterEvent);
-  REQUIRE(order.order_id == "order-1");
-  REQUIRE(order.participant_id == "p1");
-  REQUIRE(order.is_buy);
-  REQUIRE(order.price == 101.25);
-  REQUIRE(order.quantity == 7);
+  EXPECT_EQ(order.trigger_event_index, 42U);
+  EXPECT_EQ(order.timing, InjectedOrderTiming::AfterEvent);
+  EXPECT_EQ(order.order_id, "order-1");
+  EXPECT_EQ(order.participant_id, "p1");
+  EXPECT_TRUE(order.is_buy);
+  EXPECT_DOUBLE_EQ(order.price, 101.25);
+  EXPECT_EQ(order.quantity, 7U);
 }
 
-TEST_CASE("MakeSingleOrderSchedule stores order at trigger index") {
+TEST(StrategyExperimentTest, MakeSingleOrderScheduleStoresOrderAtTriggerIndex) {
   InjectedOrder order;
   order.trigger_event_index = 5;
   order.timing = InjectedOrderTiming::BeforeEvent;
@@ -38,13 +38,13 @@ TEST_CASE("MakeSingleOrderSchedule stores order at trigger index") {
   const auto schedule = MakeSingleOrderSchedule(order);
   const auto* orders = schedule.Find(5);
 
-  REQUIRE(orders != nullptr);
-  REQUIRE(orders->size() == 1);
-  REQUIRE((*orders)[0].order_id == "order-2");
-  REQUIRE((*orders)[0].participant_id == "p2");
-  REQUIRE_FALSE((*orders)[0].is_buy);
-  REQUIRE((*orders)[0].price == 99.5);
-  REQUIRE((*orders)[0].quantity == 3);
+  ASSERT_NE(orders, nullptr);
+  ASSERT_EQ(orders->size(), 1U);
+  EXPECT_EQ((*orders)[0].order_id, "order-2");
+  EXPECT_EQ((*orders)[0].participant_id, "p2");
+  EXPECT_FALSE((*orders)[0].is_buy);
+  EXPECT_DOUBLE_EQ((*orders)[0].price, 99.5);
+  EXPECT_EQ((*orders)[0].quantity, 3U);
 }
 
 }  // namespace
