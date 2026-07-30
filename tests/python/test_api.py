@@ -124,6 +124,7 @@ def test_missing_file_returns_404(tmp_path: Path):
     response = client.get("/api/replay/summary", params={"features_csv": str(missing)})
     assert response.status_code == 404
 
+
 def test_feature_sample_offset_at_end_returns_empty(tmp_path: Path):
     csv_path = _write_features_csv(tmp_path)
     response = client.get(

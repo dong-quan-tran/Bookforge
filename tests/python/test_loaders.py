@@ -61,7 +61,15 @@ def test_validate_feature_frame_non_monotonic_timestamp_raises():
     assert "replay_timestamp_ns must be monotonic increasing" in str(excinfo.value)
 
 
-@pytest.mark.parametrize("column,bad_value", [("l1_depth_imbalance", -1.1), ("l1_depth_imbalance", 1.1), ("lN_depth_imbalance", -1.01), ("lN_depth_imbalance", 1.01)])
+@pytest.mark.parametrize(
+    "column,bad_value",
+    [
+        ("l1_depth_imbalance", -1.1),
+        ("l1_depth_imbalance", 1.1),
+        ("lN_depth_imbalance", -1.01),
+        ("lN_depth_imbalance", 1.01),
+    ],
+)
 def test_bounded_imbalance_columns_enforced(column: str, bad_value: float):
     df = _make_valid_frame()
     df[column] = np.zeros(len(df))

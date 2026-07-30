@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
+import pytest
 from bookforge_py.dataset import (
     TrainingDataset,
     build_training_dataset_from_frame,
     chronological_split,
+    select_feature_columns,
     walk_forward_splits,
 )
 
@@ -135,9 +137,6 @@ def test_walk_forward_splits_generates_expected_folds():
     for fold in folds:
         assert fold.meta_train["replay_event_index"].is_monotonic_increasing
         assert fold.meta_test["replay_event_index"].is_monotonic_increasing
-
-import pytest
-from bookforge_py.dataset import select_feature_columns
 
 
 def test_select_feature_columns_excludes_default_non_features():
