@@ -113,6 +113,11 @@ bookforge_add_test(test_strategy_experiment
   src/replay/StrategyExperiment.cpp
 )
 
+bookforge_add_test(test_strategy_experiment_csv_writer
+  tests/cpp/test_strategy_experiment_csv_writer.cpp
+  src/replay/StrategyExperimentCsvWriter.cpp
+)
+
 bookforge_add_test(test_matching_engine_integration
   tests/cpp/test_matching_engine_integration.cpp
 )
@@ -130,6 +135,7 @@ add_executable(hyperliquid_replay_main
   src/HyperliquidCsvReader.cpp
   src/replay/ReplayRunner.cpp
   src/replay/StrategyExperiment.cpp
+  src/replay/StrategyExperimentCsvWriter.cpp
 )
 target_include_directories(hyperliquid_replay_main PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
