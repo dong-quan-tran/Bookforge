@@ -1,9 +1,20 @@
 # Build artifacts
 build/
+Testing/
 *.o
 *.so
 *.dylib
 *.dll
+*.exe
+*.lib
+*.a
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.ipdb
+
+# Python artifacts
 __pycache__/
 *.pyc
 *.pyo
@@ -13,19 +24,29 @@ dist/
 *.egg-info/
 
 # Data
+data/*.csv
 data/lobster_sample/*.csv
 data/processed/*.pkl
 data/processed/*.parquet
+
+# Hyperliquid raw data and extraction
+data/btc_orders_202512.tar.xz
+data/mapdir.tar.xz
+data/order_statuses/
+data/mapdir/
+data/__pycache__/
+data/read_data.py
 
 # ML artifacts
 artifacts/
 output/
 python/ml/models/
 mlruns/
+mlruns.db
 *.pkl
 *.joblib
 
-# Env
+# Environment
 .env
 venv/
 .venv/
@@ -37,18 +58,3 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
-
-# Hyperliquid raw data and extraction
-data/btc_orders_202512.tar.xz
-data/mapdir.tar.xz
-data/order_statuses/
-data/mapdir/
-data/__pycache__/
-data/read_data.py
-
-# Hyperliquid CSVs
-data/*.csv
-
-# ML experiment tracking
-mlruns/
-mlruns.db
