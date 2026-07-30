@@ -349,7 +349,7 @@ These are optional but high-value if time allows.
 ### Research / simulation
 - [x] Add synthetic market event generator
 - [ ] Add agent-based simulation mode
-- [ ] Allow user-injected orders during historical replay
+- [x] Allow user-injected orders during historical replay
 - [ ] Compare passive vs aggressive strategy behavior under replay
 - [ ] Add queue-position-aware experiments if richer data becomes available
 
@@ -365,11 +365,16 @@ These are optional but high-value if time allows.
 - [x] Add benchmark tables to docs
 - [x] Add architecture decision records (ADRs)
 
-
 ### Current status
 - [x] Added a synthetic market event generator CLI.
 - [x] Generator emits replay-compatible CSV fixtures with deterministic seeding.
 - [x] Output can be used for replay benchmarks, demos, and feature export workflows.
+- [x] Historical replay now supports scheduled injected orders through replay-side abstractions.
+- [x] Added `InjectedOrder`, `InjectedOrderSchedule`, and replay coverage for injected-order dispatch.
+- [x] Replay adapter interface now supports both external events and injected orders.
+- [ ] Strategy comparison under replay is still pending.
+- [ ] Queue-position-aware experiments still depend on richer source data.
+
 ---
 
 ## Suggested implementation order right now
