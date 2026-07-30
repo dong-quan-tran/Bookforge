@@ -6,10 +6,8 @@
 namespace bookforge {
 namespace {
 
-void DispatchInjectedOrders(IReplayAdapter &adapter,
-                            const InjectedOrderSchedule &schedule,
-                            std::size_t event_index,
-                            InjectedOrderTiming timing) {
+void DispatchInjectedOrders(IReplayAdapter &adapter, const InjectedOrderSchedule &schedule,
+                            std::size_t event_index, InjectedOrderTiming timing) {
     const auto *orders = schedule.Find(event_index);
     if (orders == nullptr) {
         return;
@@ -30,8 +28,7 @@ bool ReplayRunner::Run(IReplayAdapter &adapter,
     return Run(adapter, events, empty_schedule);
 }
 
-bool ReplayRunner::Run(IReplayAdapter &adapter,
-                       const std::vector<ExternalOrderEvent> &events,
+bool ReplayRunner::Run(IReplayAdapter &adapter, const std::vector<ExternalOrderEvent> &events,
                        const InjectedOrderSchedule &schedule) const {
     const std::size_t total = events.size();
     const std::size_t start =

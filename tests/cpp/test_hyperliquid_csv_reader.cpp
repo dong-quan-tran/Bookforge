@@ -92,9 +92,8 @@ TEST(HyperliquidCsvReaderTest, MapsUnknownStatusToOther) {
 }
 
 TEST(HyperliquidCsvReaderTest, ReadsEmptyFileWithHeaderOnly) {
-    const std::string path = WriteTempCsv(
-        "hyperliquid_reader_header_only_test.csv",
-        "ts,limitPx,sz,isAsk,statusId,status,eventType\n");
+    const std::string path = WriteTempCsv("hyperliquid_reader_header_only_test.csv",
+                                          "ts,limitPx,sz,isAsk,statusId,status,eventType\n");
 
     HyperliquidCsvReader reader(path);
     const auto events = reader.read_all();
@@ -103,10 +102,10 @@ TEST(HyperliquidCsvReaderTest, ReadsEmptyFileWithHeaderOnly) {
 }
 
 TEST(HyperliquidCsvReaderTest, ReadsFalseIsAskCorrectly) {
-    const std::string path = WriteTempCsv(
-        "hyperliquid_reader_false_isask_test.csv",
-        "ts,limitPx,sz,isAsk,statusId,status,eventType\n"
-        "2025-12-15 11:39:39.722049503,89690.0,0.02000,False,1,open,New\n");
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_false_isask_test.csv",
+                     "ts,limitPx,sz,isAsk,statusId,status,eventType\n"
+                     "2025-12-15 11:39:39.722049503,89690.0,0.02000,False,1,open,New\n");
 
     HyperliquidCsvReader reader(path);
     const auto events = reader.read_all();

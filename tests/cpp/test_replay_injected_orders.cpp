@@ -14,13 +14,17 @@ namespace {
 
 class RecordingReplayAdapter final : public IReplayAdapter {
   public:
-    void OnEvent(const ExternalOrderEvent &) override { seen.push_back("event"); }
+    void OnEvent(const ExternalOrderEvent &) override {
+        seen.push_back("event");
+    }
 
     void OnInjectedOrder(const InjectedOrder &order) override {
         seen.push_back("inject:" + order.order_id);
     }
 
-    const AdapterMetrics &Metrics() const override { return metrics_; }
+    const AdapterMetrics &Metrics() const override {
+        return metrics_;
+    }
 
     AdapterMetrics metrics_{};
     std::vector<std::string> seen;
@@ -69,11 +73,7 @@ TEST(ReplayRunnerInjectedOrdersTest, DispatchesInjectedOrdersBeforeAndAfterConfi
     ASSERT_TRUE(runner.Run(adapter, events, schedule));
 
     const std::vector<std::string> expected{
-        "event",
-        "inject:X",
-        "event",
-        "inject:Y",
-        "event",
+        "event", "inject:X", "event", "inject:Y", "event",
     };
     EXPECT_EQ(adapter.seen, expected);
 }

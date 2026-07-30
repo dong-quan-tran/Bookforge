@@ -15,8 +15,7 @@ class ReplayRunner {
 
     bool Run(IReplayAdapter &adapter, const std::vector<ExternalOrderEvent> &events) const;
 
-    bool Run(IReplayAdapter &adapter,
-             const std::vector<ExternalOrderEvent> &events,
+    bool Run(IReplayAdapter &adapter, const std::vector<ExternalOrderEvent> &events,
              const InjectedOrderSchedule &schedule) const;
 
   private:

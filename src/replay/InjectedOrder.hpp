@@ -6,10 +6,7 @@
 
 namespace bookforge {
 
-enum class InjectedOrderTiming {
-    BeforeEvent,
-    AfterEvent
-};
+enum class InjectedOrderTiming { BeforeEvent, AfterEvent };
 
 struct InjectedOrder {
     std::size_t trigger_event_index{0};

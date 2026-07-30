@@ -61,9 +61,13 @@ class StubReplayAdapter final : public IReplayAdapter {
         }
     }
 
-    void OnInjectedOrder(const InjectedOrder &) override { ++injected_calls; }
+    void OnInjectedOrder(const InjectedOrder &) override {
+        ++injected_calls;
+    }
 
-    const AdapterMetrics &Metrics() const override { return metrics_; }
+    const AdapterMetrics &Metrics() const override {
+        return metrics_;
+    }
 
     std::vector<EventType> seen;
     std::size_t injected_calls{0};

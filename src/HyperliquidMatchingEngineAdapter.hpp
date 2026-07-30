@@ -77,11 +77,17 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         SubmitOrder(order.is_buy ? Side::Buy : Side::Sell, order.price, order.quantity);
     }
 
-    const AdapterMetrics &Metrics() const override { return metrics_; }
+    const AdapterMetrics &Metrics() const override {
+        return metrics_;
+    }
 
-    const ReplayStats &Stats() const { return stats_; }
+    const ReplayStats &Stats() const {
+        return stats_;
+    }
 
-    const std::vector<Trade> &Trades() const { return trades_; }
+    const std::vector<Trade> &Trades() const {
+        return trades_;
+    }
 
   private:
     void SubmitExternalNewOrder(const ExternalOrderEvent &ev) {
