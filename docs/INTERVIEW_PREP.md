@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Bookforge is a hybrid **C++ + Python** market microstructure project centered on a replayable limit-order-book core. The repo combines a low-latency C++20 matching engine, deterministic replay, snapshot export, feature export, Python-based research workflows, benchmarks, and a lightweight API/dashboard layer.
+Bookforge is a hybrid C++ + Python market microstructure project centered on a replayable limit-order-book core. The repo combines a low-latency C++20 matching engine, deterministic replay, snapshot export, feature export, Python-based research workflows, benchmarks, and a lightweight API/dashboard layer.
 
 ## Core questions
 
