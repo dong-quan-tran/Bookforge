@@ -153,6 +153,7 @@ add_executable(hyperliquid_replay_main
   src/replay/StrategyExperiment.cpp
   src/replay/StrategyExperimentCsvWriter.cpp
   src/replay/StrategyExperimentRunner.cpp
+  src/replay/StrategyExperimentAdapter.cpp
 )
 target_include_directories(hyperliquid_replay_main PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -168,6 +169,7 @@ add_executable(strategy_experiment_main
   src/replay/StrategyExperiment.cpp
   src/replay/StrategyExperimentCsvWriter.cpp
   src/replay/StrategyExperimentRunner.cpp
+  src/replay/StrategyExperimentAdapter.cpp
 )
 target_include_directories(strategy_experiment_main PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
