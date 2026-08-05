@@ -12,16 +12,16 @@
 namespace bookforge {
 
 class StrategyExperimentRunner {
- public:
-  explicit StrategyExperimentRunner(const ReplayConfig& replay_config);
+  public:
+    explicit StrategyExperimentRunner(const ReplayConfig &replay_config);
 
-  StrategyExperimentResult RunOnce(const StrategyExperimentConfig& config,
-                                   const std::vector<ExternalOrderEvent>& events,
-                                   const std::string& order_id,
-                                   const std::string& participant_id) const;
+    StrategyExperimentResult RunOnce(const StrategyExperimentConfig &config,
+                                     const std::vector<ExternalOrderEvent> &events,
+                                     const std::string &order_id,
+                                     const std::string &participant_id) const;
 
- private:
-  ReplayConfig replay_config_;
+  private:
+    ReplayConfig replay_config_;
 };
 
-}  // namespace bookforge
+} // namespace bookforge

@@ -9,15 +9,15 @@
 namespace bookforge {
 
 class StrategyExperimentCsvSink final : public StrategyExperimentSink {
- public:
-  explicit StrategyExperimentCsvSink(std::string output_path);
+  public:
+    explicit StrategyExperimentCsvSink(std::string output_path);
 
-  void OnResult(const StrategyExperimentResult& result) override;
-  bool Flush();
+    void OnResult(const StrategyExperimentResult &result) override;
+    bool Flush();
 
- private:
-  std::string output_path_;
-  std::vector<StrategyExperimentResult> results_;
+  private:
+    std::string output_path_;
+    std::vector<StrategyExperimentResult> results_;
 };
 
-}  // namespace bookforge
+} // namespace bookforge
