@@ -17,11 +17,11 @@ The goal is not to build a full strategy framework yet. The goal is to create a 
 
 ### Inputs
 
-- Replay event stream from historical or synthetic CSV
-- Deterministic injected order schedule
-- Fixed parent order size
-- Configurable entry timestamps or replay offsets
-- Strategy mode: `passive` or `aggressive`
+- Replay event stream from historical or synthetic CSV.
+- Deterministic injected order schedule.
+- Fixed parent order size.
+- Configurable entry timestamps or replay offsets.
+- Strategy mode: `passive` or `aggressive`.
 
 ### Passive behavior
 
@@ -59,7 +59,7 @@ Each replay trial should record:
 
 A first version can write one CSV row per trial with fields such as:
 
-`strategy,timestamp,side,parent_qty,filled_qty,fill_rate,avg_px,decision_mid,decision_spread,time_to_first_fill_us,time_to_full_fill_us,remaining_qty,implementation_shortfall_bps`
+`strategy,entry_offset,is_buy,limit_price,requested_qty,filled_qty,remaining_qty,fill_rate,avg_execution_price,decision_mid_price,decision_spread,implementation_shortfall_bps,time_to_first_fill_us,time_to_full_fill_us`
 
 ## Suggested implementation plan
 
