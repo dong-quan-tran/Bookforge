@@ -308,6 +308,18 @@ ruff format .
 ### C++
 The repository uses a root `.clang-format` file and checks formatting in CI.
 
+### Local development helper
+
+For a one-command local check, use the PowerShell helper:
+
+```powershell
+.\scripts\dev-check.ps1 -Files src\replay\StrategyExperiment.hpp,src\replay\StrategyExperiment.cpp,src\replay\StrategyExperimentCsvWriter.hpp,src\replay\StrategyExperimentCsvWriter.cpp,tests\cpp\test_strategy_experiment.cpp,tests\cpp\test_strategy_experiment_csv_writer.cpp
+```
+
+This formats the listed files, then runs the CMake build and CTest suite.
+
+The repository also uses `.gitattributes` to keep line endings consistent across platforms.
+
 ## Limitations
 
 - This repo is educational and research-oriented.
