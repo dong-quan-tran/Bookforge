@@ -124,6 +124,8 @@ bookforge_add_test(test_strategy_experiment_runner
   tests/cpp/test_strategy_experiment_runner.cpp
   src/replay/StrategyExperimentRunner.cpp
   src/replay/StrategyExperiment.cpp
+  src/replay/StrategyExperimentAdapter.cpp
+  src/replay/ReplayRunner.cpp
 )
 
 bookforge_add_test(test_matching_engine_integration
