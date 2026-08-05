@@ -233,3 +233,22 @@ bookforge_add_test(test_strategy_experiment_sink
   src/replay/StrategyExperimentCsvSink.cpp
   src/replay/StrategyExperimentCsvSink.hpp
 )
+bookforge_add_test(test_strategy_experiment_runner
+  tests/cpp/test_strategy_experiment_runner.cpp
+  src/replay/StrategyExperimentRunner.cpp
+  src/replay/StrategyExperiment.cpp
+)
+add_executable(strategy_experiment_main
+  src/strategy_experiment_main.cpp
+  src/HyperliquidCsvReader.cpp
+  src/replay/ReplayRunner.cpp
+  src/replay/StrategyExperiment.cpp
+  src/replay/StrategyExperimentCsvWriter.cpp
+  src/replay/StrategyExperimentRunner.cpp
+)
+target_include_directories(strategy_experiment_main PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(strategy_experiment_main PRIVATE
+  bookforge_core
+)

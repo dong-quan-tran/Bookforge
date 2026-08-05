@@ -24,6 +24,7 @@ TEST(StrategyExperimentRunnerTest, PlaceholderConstructsAndRuns) {
   EXPECT_TRUE(result.is_buy);
   EXPECT_DOUBLE_EQ(result.limit_price, 100.0);
   EXPECT_EQ(result.requested_qty, 1U);
+  EXPECT_EQ(result.remaining_qty, 1U);
 }
 
 }  // namespace

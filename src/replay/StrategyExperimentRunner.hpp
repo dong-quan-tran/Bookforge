@@ -8,7 +8,6 @@
 #include "replay/ReplayRunner.hpp"
 #include "replay/StrategyExperiment.hpp"
 #include "replay/StrategyExperimentCsvWriter.hpp"
-#include "replay/StrategyExperimentSink.hpp"
 
 namespace bookforge {
 
@@ -19,8 +18,7 @@ class StrategyExperimentRunner {
   StrategyExperimentResult RunOnce(const StrategyExperimentConfig& config,
                                    const std::vector<ExternalOrderEvent>& events,
                                    const std::string& order_id,
-                                   const std::string& participant_id,
-                                   StrategyExperimentSink* sink = nullptr) const;
+                                   const std::string& participant_id) const;
 
  private:
   ReplayConfig replay_config_;
