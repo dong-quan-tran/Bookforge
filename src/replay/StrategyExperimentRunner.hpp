@@ -7,7 +7,7 @@
 #include "replay/ReplayConfig.hpp"
 #include "replay/ReplayRunner.hpp"
 #include "replay/StrategyExperiment.hpp"
-#include "replay/StrategyExperimentCsvWriter.hpp"
+#include "replay/StrategyExperimentAdapter.hpp"
 
 namespace bookforge {
 
