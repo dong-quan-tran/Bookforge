@@ -1206,3 +1206,39 @@ That update also clarified what remains unfinished. Strategy comparison under re
 - Format replay and test sources with clang-format
 - Expand interview prep and architecture docs
 - Update Phase 10 stretch goals checklist
+
+
+July 30, 2026 — Progress Log
+Today’s work focused on making the repository easier to work in and advancing the Phase 10 research scaffold.
+
+Workflow and repo hygiene
+Diagnosed repeated CI lint failures caused by formatting and line-ending drift.
+
+Standardized the local formatting workflow around the Windows LLVM clang-format.exe.
+
+Added .gitattributes guidance so Git normalizes line endings consistently.
+
+Documented the local dev-check flow in the project docs so formatting, build, and test can be run together.
+
+Kept formatting changes separate from functional changes to make future reviews cleaner.
+
+Strategy experiment scaffold
+Continued Phase 10 work on the passive-vs-aggressive replay experiment.
+
+Added and refined the strategy experiment data structures.
+
+Added CSV writing support for experiment results.
+
+Added tests for experiment helpers and CSV output.
+
+Kept the experiment scaffold green after fixing Windows file-handle cleanup in the tests.
+
+Replay and build wiring
+Added a minimal strategy experiment runner scaffold.
+
+Wired the new files into CMake and kept the test suite passing.
+
+Verified the full C++ test suite still passes after the new experiment-related changes.
+
+Outcome
+The repo now has a cleaner formatting workflow, less noisy Windows line-ending behavior, and a stronger foundation for the next Phase 10 task: turning the strategy experiment runner into a real replay-backed metric generator.
