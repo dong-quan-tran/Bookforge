@@ -8,9 +8,9 @@
 namespace bookforge {
 
 class StrategyExperimentCsvWriter {
- public:
-  static bool Write(const std::string& path,
-                    const std::vector<StrategyExperimentResult>& results);
+  public:
+    static bool Write(const std::string &path,
+                      const std::vector<StrategyExperimentResult> &results);
 };
 
-}  // namespace bookforge
+} // namespace bookforge

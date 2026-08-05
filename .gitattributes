@@ -1,4 +1,12 @@
-*.cpp text eol=lf
-*.hpp text eol=lf
-*.h   text eol=lf
-*.c   text eol=lf
+* text=auto eol=lf
+
+*.sln text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.gif -text
+*.webp -text
+*.pdf -text
