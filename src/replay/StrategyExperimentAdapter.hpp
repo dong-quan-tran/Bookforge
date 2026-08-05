@@ -1,0 +1,26 @@
+#pragma once
+
+#include "HyperliquidMatchingEngineAdapter.hpp"
+#include "replay/StrategyExperiment.hpp"
+
+namespace bookforge {
+
+class StrategyExperimentAdapter final : public IReplayAdapter {
+  public:
+    explicit StrategyExperimentAdapter(StrategyExperimentConfig config);
+
+    void OnEvent(const ExternalOrderEvent &event) override;
+    void OnInjectedOrder(const InjectedOrder &order) override;
+
+    const ReplayMetrics &Metrics() const override;
+
+    StrategyExperimentResult Result() const;
+
+  private:
+    StrategyExperimentConfig config_;
+    ReplayMetrics metrics_;
+
+    StrategyExperimentResult result_;
+};
+
+} // namespace bookforge

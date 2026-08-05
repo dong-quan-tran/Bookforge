@@ -138,6 +138,12 @@ bookforge_add_test(test_feature_builder
   tests/cpp/test_feature_builder.cpp
 )
 
+bookforge_add_test(test_strategy_experiment_adapter
+  tests/cpp/test_strategy_experiment_adapter.cpp
+  src/replay/StrategyExperimentAdapter.cpp
+  src/replay/StrategyExperiment.cpp
+)
+
 add_executable(hyperliquid_replay_main
   src/hyperliquid_replay_main.cpp
   src/HyperliquidCsvReader.cpp
