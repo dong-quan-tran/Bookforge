@@ -12,14 +12,13 @@ class StrategyExperimentAdapter final : public IReplayAdapter {
     void OnEvent(const ExternalOrderEvent &event) override;
     void OnInjectedOrder(const InjectedOrder &order) override;
 
-    const ReplayMetrics &Metrics() const override;
+    const AdapterMetrics &Metrics() const override;
 
     StrategyExperimentResult Result() const;
 
   private:
     StrategyExperimentConfig config_;
-    ReplayMetrics metrics_;
-
+    AdapterMetrics metrics_;
     StrategyExperimentResult result_;
 };
 

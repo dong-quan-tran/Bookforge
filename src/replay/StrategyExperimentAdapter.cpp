@@ -31,7 +31,7 @@ void StrategyExperimentAdapter::OnInjectedOrder(const InjectedOrder &order) {
     // and update result_ based on fills.
 }
 
-const ReplayMetrics &StrategyExperimentAdapter::Metrics() const {
+const AdapterMetrics &StrategyExperimentAdapter::Metrics() const {
     return metrics_;
 }
 
