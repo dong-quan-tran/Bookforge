@@ -224,3 +224,12 @@ target_include_directories(strategy_experiment_main PRIVATE
 target_link_libraries(strategy_experiment_main PRIVATE
   bookforge_core
 )
+
+bookforge_add_test(test_strategy_experiment_sink
+  tests/cpp/test_strategy_experiment_sink.cpp
+  src/replay/StrategyExperimentCsvSink.cpp
+  src/replay/StrategyExperimentCsvWriter.cpp
+  src/replay/StrategyExperimentSink.hpp
+  src/replay/StrategyExperimentCsvSink.cpp
+  src/replay/StrategyExperimentCsvSink.hpp
+)
