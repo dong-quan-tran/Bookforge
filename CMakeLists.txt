@@ -203,3 +203,24 @@ if(BOOKFORGE_ENABLE_BENCHMARKS)
     BOOKFORGE_BENCH_FIXTURE_FILE="${BOOKFORGE_BENCH_REPLAY_FIXTURE}"
   )
 endif()
+
+bookforge_add_test(test_strategy_experiment_runner
+  tests/cpp/test_strategy_experiment_runner.cpp
+  src/replay/StrategyExperimentRunner.cpp
+  src/replay/StrategyExperiment.cpp
+)
+
+add_executable(strategy_experiment_main
+  src/strategy_experiment_main.cpp
+  src/HyperliquidCsvReader.cpp
+  src/replay/ReplayRunner.cpp
+  src/replay/StrategyExperiment.cpp
+  src/replay/StrategyExperimentCsvWriter.cpp
+  src/replay/StrategyExperimentRunner.cpp
+)
+target_include_directories(strategy_experiment_main PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(strategy_experiment_main PRIVATE
+  bookforge_core
+)
