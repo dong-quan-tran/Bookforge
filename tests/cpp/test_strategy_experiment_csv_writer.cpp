@@ -42,6 +42,8 @@ TEST(StrategyExperimentCsvWriterTest, WritesHeaderAndRows) {
 
   std::ostringstream buffer;
   buffer << in.rdbuf();
+  in.close();  // Ensure file is closed before removal on Windows.
+
   const std::string content = buffer.str();
 
   EXPECT_NE(content.find("strategy,entry_offset,is_buy,limit_price"),
@@ -49,7 +51,8 @@ TEST(StrategyExperimentCsvWriterTest, WritesHeaderAndRows) {
   EXPECT_NE(content.find("\"passive\",123,true,101.5,10,6,4,0.6,101.25,101"),
             std::string::npos);
 
-  std::filesystem::remove(output_path);
+  std::error_code ec;
+  std::filesystem::remove(output_path, ec);
 }
 
 TEST(StrategyExperimentCsvWriterTest, WritesAggressiveModeString) {
@@ -74,11 +77,14 @@ TEST(StrategyExperimentCsvWriterTest, WritesAggressiveModeString) {
 
   std::ostringstream buffer;
   buffer << in.rdbuf();
+  in.close();  // Ensure file is closed before removal on Windows.
+
   const std::string content = buffer.str();
 
   EXPECT_NE(content.find("\"aggressive\",5,false,99,3"), std::string::npos);
 
-  std::filesystem::remove(output_path);
+  std::error_code ec;
+  std::filesystem::remove(output_path, ec);
 }
 
 }  // namespace
