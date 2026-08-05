@@ -35,6 +35,8 @@ include(GoogleTest)
 set(BOOKFORGE_PY_PACKAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python/bookforge_py)
 file(MAKE_DIRECTORY ${BOOKFORGE_PY_PACKAGE_DIR})
 
+option(BOOKFORGE_ENABLE_BENCHMARKS "Build Bookforge benchmarks" ON)
+
 add_library(bookforge_core
   src/core/price_level.cpp
   src/core/order_book.cpp
@@ -118,6 +120,12 @@ bookforge_add_test(test_strategy_experiment_csv_writer
   src/replay/StrategyExperimentCsvWriter.cpp
 )
 
+bookforge_add_test(test_strategy_experiment_runner
+  tests/cpp/test_strategy_experiment_runner.cpp
+  src/replay/StrategyExperimentRunner.cpp
+  src/replay/StrategyExperiment.cpp
+)
+
 bookforge_add_test(test_matching_engine_integration
   tests/cpp/test_matching_engine_integration.cpp
 )
@@ -136,11 +144,27 @@ add_executable(hyperliquid_replay_main
   src/replay/ReplayRunner.cpp
   src/replay/StrategyExperiment.cpp
   src/replay/StrategyExperimentCsvWriter.cpp
+  src/replay/StrategyExperimentRunner.cpp
 )
 target_include_directories(hyperliquid_replay_main PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(hyperliquid_replay_main PRIVATE
+  bookforge_core
+)
+
+add_executable(strategy_experiment_main
+  src/strategy_experiment_main.cpp
+  src/HyperliquidCsvReader.cpp
+  src/replay/ReplayRunner.cpp
+  src/replay/StrategyExperiment.cpp
+  src/replay/StrategyExperimentCsvWriter.cpp
+  src/replay/StrategyExperimentRunner.cpp
+)
+target_include_directories(strategy_experiment_main PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(strategy_experiment_main PRIVATE
   bookforge_core
 )
 
@@ -181,8 +205,6 @@ if(WIN32)
   )
 endif()
 
-option(BOOKFORGE_ENABLE_BENCHMARKS "Build Bookforge benchmarks" ON)
-
 if(BOOKFORGE_ENABLE_BENCHMARKS)
   FetchContent_Declare(
     googlebenchmark
@@ -203,52 +225,3 @@ if(BOOKFORGE_ENABLE_BENCHMARKS)
     BOOKFORGE_BENCH_FIXTURE_FILE="${BOOKFORGE_BENCH_REPLAY_FIXTURE}"
   )
 endif()
-
-bookforge_add_test(test_strategy_experiment_runner
-  tests/cpp/test_strategy_experiment_runner.cpp
-  src/replay/StrategyExperimentRunner.cpp
-  src/replay/StrategyExperiment.cpp
-)
-
-add_executable(strategy_experiment_main
-  src/strategy_experiment_main.cpp
-  src/HyperliquidCsvReader.cpp
-  src/replay/ReplayRunner.cpp
-  src/replay/StrategyExperiment.cpp
-  src/replay/StrategyExperimentCsvWriter.cpp
-  src/replay/StrategyExperimentRunner.cpp
-)
-target_include_directories(strategy_experiment_main PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-target_link_libraries(strategy_experiment_main PRIVATE
-  bookforge_core
-)
-
-bookforge_add_test(test_strategy_experiment_sink
-  tests/cpp/test_strategy_experiment_sink.cpp
-  src/replay/StrategyExperimentCsvSink.cpp
-  src/replay/StrategyExperimentCsvWriter.cpp
-  src/replay/StrategyExperimentSink.hpp
-  src/replay/StrategyExperimentCsvSink.cpp
-  src/replay/StrategyExperimentCsvSink.hpp
-)
-bookforge_add_test(test_strategy_experiment_runner
-  tests/cpp/test_strategy_experiment_runner.cpp
-  src/replay/StrategyExperimentRunner.cpp
-  src/replay/StrategyExperiment.cpp
-)
-add_executable(strategy_experiment_main
-  src/strategy_experiment_main.cpp
-  src/HyperliquidCsvReader.cpp
-  src/replay/ReplayRunner.cpp
-  src/replay/StrategyExperiment.cpp
-  src/replay/StrategyExperimentCsvWriter.cpp
-  src/replay/StrategyExperimentRunner.cpp
-)
-target_include_directories(strategy_experiment_main PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-target_link_libraries(strategy_experiment_main PRIVATE
-  bookforge_core
-)
