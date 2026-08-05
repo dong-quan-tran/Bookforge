@@ -302,6 +302,17 @@ Current controls include:
 
 These controls support the broader goal of moving the repository from “works” to “serious project.”
 
+## Development workflow controls
+
+The repository uses a few workflow controls to keep CI and local development aligned:
+
+- `.gitattributes` normalizes line endings so Git does not introduce noisy CRLF/LF diffs.
+- C++ formatting is enforced with `clang-format` and should be run locally before commit.
+- Formatting changes are best committed separately from functional changes.
+- A small local helper script can run formatting, build, and tests in one step.
+
+These controls reduce repeated lint failures and keep the repository easier to review across Windows and Unix environments.
+
 ## Why this structure
 
 This design is a good fit for Bookforge because it supports:
