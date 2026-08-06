@@ -42,19 +42,17 @@ StrategyExperimentResult StrategyExperimentAdapter::Result() const {
 }
 
 void StrategyExperimentAdapter::MaybeCaptureDecisionMetrics(const ExternalOrderEvent &event) {
+    (void)event;
+
     // Placeholder implementation:
-    // Capture metrics once when we reach or pass entry_offset.
+    // Capture metrics once on the first event processed.
     if (result_.has_decision_metrics) {
         return;
     }
 
-    // Use the event index as a proxy for decision timing.
-    // In a richer implementation, this would inspect book state and compute
-    // mid/ spread from the matching engine / order book.
-    if (event.index >= config_.entry_offset) {
-        // For now, just mark that we have decision metrics; mid/spread remain 0.
-        result_.has_decision_metrics = true;
-    }
+    // In a fuller implementation, this would inspect book state and compute
+    // mid/ spread from the matching engine / order book at decision time.
+    result_.has_decision_metrics = true;
 }
 
 } // namespace bookforge

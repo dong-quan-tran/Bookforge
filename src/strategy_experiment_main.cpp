@@ -78,7 +78,7 @@ StrategyExperimentConfig BuildExperimentConfig(const CliOptions &opts) {
     config.csv_path = opts.input_csv;
     config.entry_offset = opts.entry_offset;
     config.is_buy = ParseSide(opts.side);
-    config.limit_price = 0.0; // Filled by adapter later if needed.
+    config.limit_price = 0.0;
     config.quantity = opts.quantity;
     config.timing = InjectedOrderTiming::BeforeEvent;
     return config;
@@ -87,9 +87,9 @@ StrategyExperimentConfig BuildExperimentConfig(const CliOptions &opts) {
 ReplayConfig BuildReplayConfig(const CliOptions &opts) {
     ReplayConfig config;
     config.start_offset = static_cast<std::uint64_t>(opts.entry_offset);
-    config.max_events = 0;      // Process to end.
-    config.log_every_n = 0;     // No periodic logging.
-    config.log_summary = false; // Keep CLI output simple for now.
+    config.max_events = 0;
+    config.log_every_n = 0;
+    config.log_summary = false;
     return config;
 }
 
@@ -113,8 +113,9 @@ int main(int argc, char **argv) {
               << "  quantity: " << opts.quantity << '\n'
               << "  entry_offset: " << opts.entry_offset << '\n';
 
-    HyperliquidCsvReader reader;
-    const auto events = reader.Read(opts.input_csv);
+    // TODO: integrate HyperliquidCsvReader using the same pattern as hyperliquid_replay_main.
+    // For now, use an empty event vector to keep the harness wiring valid.
+    const std::vector<ExternalOrderEvent> events;
 
     const auto experiment_config = BuildExperimentConfig(opts);
     const auto replay_config = BuildReplayConfig(opts);
