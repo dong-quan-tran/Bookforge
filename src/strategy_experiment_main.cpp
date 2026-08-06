@@ -72,6 +72,27 @@ bool ParseSide(const std::string &side) {
     return side != "sell";
 }
 
+StrategyExperimentConfig BuildExperimentConfig(const CliOptions &opts) {
+    StrategyExperimentConfig config;
+    config.mode = ParseMode(opts.mode);
+    config.csv_path = opts.input_csv;
+    config.entry_offset = opts.entry_offset;
+    config.is_buy = ParseSide(opts.side);
+    config.limit_price = 0.0; // Filled by adapter later if needed.
+    config.quantity = opts.quantity;
+    config.timing = InjectedOrderTiming::BeforeEvent;
+    return config;
+}
+
+ReplayConfig BuildReplayConfig(const CliOptions &opts) {
+    ReplayConfig config;
+    config.start_offset = static_cast<std::uint64_t>(opts.entry_offset);
+    config.max_events = 0;      // Process to end.
+    config.log_every_n = 0;     // No periodic logging.
+    config.log_summary = false; // Keep CLI output simple for now.
+    return config;
+}
+
 } // namespace
 } // namespace bookforge
 
@@ -92,12 +113,23 @@ int main(int argc, char **argv) {
               << "  quantity: " << opts.quantity << '\n'
               << "  entry_offset: " << opts.entry_offset << '\n';
 
-    // Placeholder: real implementation will go here in the next commit.
-    // It will:
-    // - use HyperliquidCsvReader to load events from opts.input_csv
-    // - build a StrategyExperimentConfig from opts
-    // - create a ReplayConfig and StrategyExperimentRunner
-    // - run a single experiment and write a CSV via StrategyExperimentCsvWriter.
+    HyperliquidCsvReader reader;
+    const auto events = reader.Read(opts.input_csv);
 
+    const auto experiment_config = BuildExperimentConfig(opts);
+    const auto replay_config = BuildReplayConfig(opts);
+
+    StrategyExperimentRunner runner(replay_config);
+    const auto result = runner.RunOnce(experiment_config, events, "experiment-order-1", "cli");
+
+    std::vector<StrategyExperimentResult> results;
+    results.push_back(result);
+
+    if (!StrategyExperimentCsvWriter::Write(opts.output_csv, results)) {
+        std::cerr << "Failed to write experiment results CSV: " << opts.output_csv << '\n';
+        return 1;
+    }
+
+    std::cout << "Wrote experiment result to: " << opts.output_csv << '\n';
     return 0;
 }
