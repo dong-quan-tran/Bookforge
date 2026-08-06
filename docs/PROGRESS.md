@@ -1318,3 +1318,110 @@ By the end of the day:
 - The repository has a clearer, automated formatting and test workflow via pre-commit and pre-push hooks.
 - The strategy experiment harness (adapter + runner + CLI) is structurally complete and integrated into both executables and tests.
 - Phase 10’s current status now explicitly recognizes the experiment plumbing as in place, setting up the next round of work: actually running passive vs aggressive experiments under replay and analyzing their behavior.
+
+Progress log: 2026-08-06
+
+1) Strategy experiment core formatting and cleanup
+Ran clang-format over StrategyExperiment.hpp, StrategyExperiment.cpp, and test_strategy_experiment.cpp, then committed the changes.
+
+Ensured the core experiment config and result types are consistent with existing helpers (MakeInjectedOrder, MakeSingleOrderSchedule) and tests.
+
+Verified all existing strategy experiment unit tests pass after formatting.
+
+2) CSV writer for experiment results
+Added StrategyExperimentCsvWriter.hpp/.cpp to support writing experiment outputs to CSV.
+
+Implemented StrategyExperimentCsvWriter::Write(path, results) to:
+
+open the target file,
+
+write a header row describing key fields,
+
+write one row per StrategyExperimentResult.
+
+3) Tests for the CSV writer
+Created test_strategy_experiment_csv_writer.cpp with two tests:
+
+WritesHeaderAndRows:
+
+Builds a StrategyExperimentResult with realistic values (mode, entry_offset, side, limit_price, requested/fill quantities, decision metrics, shortfall, time-to-fill).
+
+Calls the CSV writer into a temp file.
+
+Reads the file back and asserts:
+
+The header contains strategy,entry_offset,is_buy,limit_price.
+
+The first data row contains "passive",123,true,101.5,10,6,4,0.6,101.25,101.
+
+WritesAggressiveModeString:
+
+Builds an aggressive-mode result.
+
+Asserts the CSV contains "aggressive",5,false,99,3.
+
+4) Wiring CSV writer into the build
+Updated CMakeLists.txt to:
+
+Compile StrategyExperimentCsvWriter.cpp into the core test targets:
+
+test_strategy_experiment_csv_writer
+
+hyperliquid_replay_main
+
+strategy_experiment_main
+
+Link test_strategy_experiment_csv_writer against both the test file and the writer implementation.
+
+Ensured all test executables are regenerated and the CSV writer is part of the main replay/experiment binaries.
+
+5) Fixes and alignment work
+Resolved linker errors caused by:
+
+Duplicate definitions of StrategyExperimentAdapter and StrategyExperimentCsvWriter::Write in both source and test files.
+
+Did this by:
+
+Centralizing the adapter implementation in StrategyExperimentAdapter.cpp.
+
+Centralizing the CSV writer implementation in StrategyExperimentCsvWriter.cpp.
+
+Ensuring test_strategy_experiment_runner and test_strategy_experiment_csv_writer only use these implementations, not redefine them.
+
+Adjusted StrategyExperimentCsvWriter to match the exact CSV format expected by tests:
+
+Header: strategy,entry_offset,is_buy,limit_price,...
+
+Rows: quoted strategy string and boolean side, e.g. "passive",123,true,101.5,... and "aggressive",5,false,99,3.
+
+6) Adapter and runner plumbing
+Kept StrategyExperimentResult as the single source of truth for experiment metrics, including:
+
+requested_qty, filled_qty, remaining_qty
+
+fill_rate, avg_execution_price
+
+decision_mid_price, decision_spread, has_decision_metrics
+
+implementation_shortfall_bps
+
+time_to_first_fill_us, time_to_full_fill_us
+
+Ensured:
+
+StrategyExperimentAdapter initializes all these fields and provides a Result() method.
+
+StrategyExperimentRunner uses the adapter in a clean, non-duplicated way, with a stubbed RunOnce that’s ready for more complex replay integration.
+
+7) CI / dev-check
+Ran .\scripts\dev-check.ps1 multiple times:
+
+Regenerated CMake configuration and VS build files.
+
+Built all Debug targets, including core library, test binaries, and the replay executables.
+
+Ran ctest with --output-on-failure, confirmed:
+
+Existing order book, matching engine, replay, snapshot, and feature tests still pass.
+
+New strategy experiment CSV writer tests pass after format and duplication fixes.
