@@ -1,12 +1,7 @@
 #include <iostream>
 #include <string>
-#include <vector>
 
-#include "HyperliquidCsvReader.hpp"
-#include "replay/ReplayConfig.hpp"
 #include "replay/StrategyExperiment.hpp"
-#include "replay/StrategyExperimentCsvWriter.hpp"
-#include "replay/StrategyExperimentRunner.hpp"
 
 namespace bookforge {
 namespace {
@@ -61,38 +56,6 @@ void PrintUsage() {
               << "                          [--entry-offset N]\n";
 }
 
-StrategyMode ParseMode(const std::string &mode) {
-    if (mode == "aggressive") {
-        return StrategyMode::Aggressive;
-    }
-    return StrategyMode::Passive;
-}
-
-bool ParseSide(const std::string &side) {
-    return side != "sell";
-}
-
-StrategyExperimentConfig BuildExperimentConfig(const CliOptions &opts) {
-    StrategyExperimentConfig config;
-    config.mode = ParseMode(opts.mode);
-    config.csv_path = opts.input_csv;
-    config.entry_offset = opts.entry_offset;
-    config.is_buy = ParseSide(opts.side);
-    config.limit_price = 0.0;
-    config.quantity = opts.quantity;
-    config.timing = InjectedOrderTiming::BeforeEvent;
-    return config;
-}
-
-ReplayConfig BuildReplayConfig(const CliOptions &opts) {
-    ReplayConfig config;
-    config.start_offset = static_cast<std::uint64_t>(opts.entry_offset);
-    config.max_events = 0;
-    config.log_every_n = 0;
-    config.log_summary = false;
-    return config;
-}
-
 } // namespace
 } // namespace bookforge
 
@@ -113,24 +76,8 @@ int main(int argc, char **argv) {
               << "  quantity: " << opts.quantity << '\n'
               << "  entry_offset: " << opts.entry_offset << '\n';
 
-    // TODO: integrate HyperliquidCsvReader using the same pattern as hyperliquid_replay_main.
-    // For now, use an empty event vector to keep the harness wiring valid.
-    const std::vector<ExternalOrderEvent> events;
+    // TODO: wire this CLI into StrategyExperimentRunner and HyperliquidCsvReader
+    // using the same pattern as hyperliquid_replay_main once the runner is fully implemented.
 
-    const auto experiment_config = BuildExperimentConfig(opts);
-    const auto replay_config = BuildReplayConfig(opts);
-
-    StrategyExperimentRunner runner(replay_config);
-    const auto result = runner.RunOnce(experiment_config, events, "experiment-order-1", "cli");
-
-    std::vector<StrategyExperimentResult> results;
-    results.push_back(result);
-
-    if (!StrategyExperimentCsvWriter::Write(opts.output_csv, results)) {
-        std::cerr << "Failed to write experiment results CSV: " << opts.output_csv << '\n';
-        return 1;
-    }
-
-    std::cout << "Wrote experiment result to: " << opts.output_csv << '\n';
     return 0;
 }

@@ -16,6 +16,9 @@ class StrategyExperimentAdapter final : public IReplayAdapter {
 
     StrategyExperimentResult Result() const;
 
+    // Hook the replay/matching engine can call when a fill occurs.
+    void OnFill(std::uint32_t fill_qty, double fill_price);
+
   private:
     void MaybeCaptureDecisionMetrics(const ExternalOrderEvent &event);
 
