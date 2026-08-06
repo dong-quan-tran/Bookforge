@@ -17,6 +17,8 @@ class StrategyExperimentAdapter final : public IReplayAdapter {
     StrategyExperimentResult Result() const;
 
   private:
+    void MaybeCaptureDecisionMetrics(const ExternalOrderEvent &event);
+
     StrategyExperimentConfig config_;
     AdapterMetrics metrics_;
     StrategyExperimentResult result_;

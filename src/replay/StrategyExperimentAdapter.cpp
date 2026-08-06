@@ -15,14 +15,16 @@ StrategyExperimentAdapter::StrategyExperimentAdapter(StrategyExperimentConfig co
     result_.avg_execution_price = 0.0;
     result_.decision_mid_price = 0.0;
     result_.decision_spread = 0.0;
+    result_.has_decision_metrics = false;
     result_.implementation_shortfall_bps = 0.0;
     result_.time_to_first_fill_us = 0;
     result_.time_to_full_fill_us = 0;
 }
 
 void StrategyExperimentAdapter::OnEvent(const ExternalOrderEvent &event) {
+    MaybeCaptureDecisionMetrics(event);
     (void)event;
-    // Placeholder: real implementation will track mid, spread, and fills.
+    // Placeholder: real implementation will track fills and execution metrics.
 }
 
 void StrategyExperimentAdapter::OnInjectedOrder(const InjectedOrder &order) {
@@ -37,6 +39,22 @@ const AdapterMetrics &StrategyExperimentAdapter::Metrics() const {
 
 StrategyExperimentResult StrategyExperimentAdapter::Result() const {
     return result_;
+}
+
+void StrategyExperimentAdapter::MaybeCaptureDecisionMetrics(const ExternalOrderEvent &event) {
+    // Placeholder implementation:
+    // Capture metrics once when we reach or pass entry_offset.
+    if (result_.has_decision_metrics) {
+        return;
+    }
+
+    // Use the event index as a proxy for decision timing.
+    // In a richer implementation, this would inspect book state and compute
+    // mid/ spread from the matching engine / order book.
+    if (event.index >= config_.entry_offset) {
+        // For now, just mark that we have decision metrics; mid/spread remain 0.
+        result_.has_decision_metrics = true;
+    }
 }
 
 } // namespace bookforge
