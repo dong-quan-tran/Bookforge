@@ -1242,3 +1242,79 @@ Verified the full C++ test suite still passes after the new experiment-related c
 
 Outcome
 The repo now has a cleaner formatting workflow, less noisy Windows line-ending behavior, and a stronger foundation for the next Phase 10 task: turning the strategy experiment runner into a real replay-backed metric generator.
+
+# August 5, 2026 — Progress Log
+
+Today’s work focused on tightening the development workflow around formatting and tests, and wiring the strategy experiment harness end-to-end for Phase 10.
+
+## Git hooks and formatting workflow
+
+- Added a **pre-commit PowerShell script** (`scripts/pre-commit.ps1`) to automatically run `clang-format` over all C++ sources (`src`, `tests`, `bench`) and re-stage changes before each commit.
+- Added a **pre-commit hook** (`.git/hooks/pre-commit`) that wraps the PowerShell script so formatting happens early in the Git workflow.
+- Kept the **pre-push hook** (`.git/hooks/pre-push`) in place to run the local dev-check script before pushes: formatting, CMake configure, build, and CTest run as a safety net before code reaches CI.
+- Updated `scripts/dev-check.ps1` to format all tracked C++ files with `clang-format -style=file`, then build Release/Debug and run the full C++ test suite.
+- Verified that the hooks work on Windows by calling `powershell.exe` from the hook wrapper instead of `pwsh`, avoiding interpreter path issues.
+
+This setup makes “edit → auto-format → commit → build/test → push” the default flow and reduces repeated lint failures on GitHub.
+
+## Strategy experiment adapter and runner
+
+- Introduced `StrategyExperimentAdapter`, a replay adapter derived from `IReplayAdapter`, which owns a `StrategyExperimentConfig`, `AdapterMetrics`, and a `StrategyExperimentResult` scaffold.
+- Implemented the adapter constructor and `Result()` so that the result is initialized directly from the experiment config (mode, entry offset, side, limit price, requested quantity).
+- Added `test_strategy_experiment_adapter.cpp` with GoogleTest coverage to verify that an adapter created from a config exposes the expected initial result state.
+- Wired the adapter into CMake test targets so the adapter and result definitions are linked correctly for unit tests.
+
+## Strategy experiment runner wiring
+
+- Updated `StrategyExperimentRunner` so `RunOnce`:
+  - constructs an `InjectedOrder` from the `StrategyExperimentConfig`,
+  - builds an `InjectedOrderSchedule`,
+  - constructs a `StrategyExperimentAdapter`,
+  - calls `ReplayRunner::Run(adapter, events, schedule)`,
+  - returns `adapter.Result()` as the experiment outcome.
+- Updated `test_strategy_experiment_runner.cpp` to assert that `RunOnce` returns a result derived from the config, keeping tests focused on harness wiring rather than full execution behavior.
+- Fixed CMake wiring so `test_strategy_experiment_runner` links all required sources: `StrategyExperimentRunner.cpp`, `StrategyExperiment.cpp`, `StrategyExperimentAdapter.cpp`, and `ReplayRunner.cpp`.
+
+## Executable and CMake wiring
+
+- Ensured both replay executables link the new experiment adapter and runner:
+  - `hyperliquid_replay_main` now includes `StrategyExperimentAdapter.cpp`, `StrategyExperimentRunner.cpp`, `StrategyExperiment.cpp`, `StrategyExperimentCsvWriter.cpp`, `ReplayRunner.cpp`, and `HyperliquidCsvReader.cpp`.
+  - `strategy_experiment_main` links the same stack, providing a dedicated entrypoint for single-trial strategy experiments.
+- Cleaned up `CMakeLists.txt`:
+  - organized test targets under `bookforge_add_test`,
+  - added adapter and runner sources to the appropriate test and executable targets,
+  - eliminated duplicate target declarations and missing-source link errors.
+
+## Strategy experiment CLI skeleton
+
+- Replaced `strategy_experiment_main.cpp` with a **CLI skeleton** that:
+  - parses command-line arguments:
+    - `--input` (required) for the replay CSV path,
+    - `--output` for the result CSV path (default `output/strategy_experiment_results.csv`),
+    - `--mode` (`passive` or `aggressive`),
+    - `--side` (`buy` or `sell`),
+    - `--quantity`,
+    - `--entry-offset`,
+  - prints the parsed options to stdout as a placeholder.
+- Left a clear hook in the CLI for the next commit to:
+  - load events via `HyperliquidCsvReader`,
+  - build a `StrategyExperimentConfig` from the CLI options,
+  - construct a `ReplayConfig` and `StrategyExperimentRunner`,
+  - run a single experiment and write a CSV row via `StrategyExperimentCsvWriter`.
+
+This gives a basic command-line interface around the experiment harness, ready to be fleshed out with real replay behavior and metrics.
+
+## Phase 10 checklist updates
+
+- Updated `docs/BLUEPRINT.md` to reflect that:
+  - the synthetic event generator, injected order support, replay adapter, and experiment harness are now wired end-to-end,
+  - the strategy experiment adapter, runner, and CLI provide a single-trial replay experiment entrypoint.
+- Left “Compare passive vs aggressive strategy behavior under replay” and queue-position-aware experiments as open items, to be tackled after the CLI starts emitting real metrics and experiments are run over multiple trials.
+
+## Outcome
+
+By the end of the day:
+
+- The repository has a clearer, automated formatting and test workflow via pre-commit and pre-push hooks.
+- The strategy experiment harness (adapter + runner + CLI) is structurally complete and integrated into both executables and tests.
+- Phase 10’s current status now explicitly recognizes the experiment plumbing as in place, setting up the next round of work: actually running passive vs aggressive experiments under replay and analyzing their behavior.
