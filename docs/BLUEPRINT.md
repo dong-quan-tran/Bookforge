@@ -372,7 +372,7 @@ These are optional but high-value if time allows.
 - [x] Historical replay now supports scheduled injected orders through replay-side abstractions.
 - [x] Added `InjectedOrder`, `InjectedOrderSchedule`, and replay coverage for injected-order dispatch.
 - [x] Replay adapter interface now supports both external events and injected orders.
-- [ ] Passive vs aggressive replay experiment harness is the next recommended research task.
+- [x] Strategy experiment adapter, runner, and CLI are wired end-to-end for single-trial replay experiments.
 - [ ] Strategy comparison under replay is still pending.
 - [ ] Queue-position-aware experiments still depend on richer source data.
 
