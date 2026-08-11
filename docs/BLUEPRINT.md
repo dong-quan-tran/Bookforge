@@ -347,6 +347,7 @@ Raise the repo from “works” to a serious, maintainable project.
 These are optional but high-value if time allows.
 
 ### Research / simulation
+
 - [x] Add synthetic market event generator
 - [ ] Add agent-based simulation mode
 - [x] Allow user-injected orders during historical replay
@@ -354,6 +355,7 @@ These are optional but high-value if time allows.
 - [ ] Add queue-position-aware experiments if richer data becomes available
 
 ### Systems / performance
+
 - [ ] Add lock-free replay queue
 - [ ] Add deterministic replay pacing
 - [ ] Add latency histograms
@@ -361,22 +363,29 @@ These are optional but high-value if time allows.
 - [ ] Add binary historical data reader for higher throughput
 
 ### Product / presentation
+
 - [x] Add a polished demo scenario for interviews
 - [x] Add benchmark tables to docs
 - [x] Add architecture decision records (ADRs)
 
 ### Current status
-- [x] Added a synthetic market event generator CLI.
-- [x] Generator emits replay-compatible CSV fixtures with deterministic seeding.
-- [x] Output can be used for replay benchmarks, demos, and feature export workflows.
-- [x] Historical replay now supports scheduled injected orders through replay-side abstractions.
-- [x] Added `InjectedOrder`, `InjectedOrderSchedule`, and replay coverage for injected-order dispatch.
-- [x] Replay adapter interface now supports both external events and injected orders.
-- [x] Strategy experiment adapter, runner, and CLI are wired end-to-end for single-trial replay experiments.
-- [ ] Strategy comparison under replay is still pending.
-- [ ] Queue-position-aware experiments still depend on richer source data.
 
----
+- [x] Added a synthetic market-event generator CLI.
+- [x] Generator emits replay-compatible CSV fixtures with deterministic seeding.
+- [x] Output can be used for replay benchmarks, demos, feature-export workflows, and future strategy experiments.
+- [x] Historical replay supports scheduled injected orders through replay-side abstractions.
+- [x] Added `InjectedOrder`, `InjectedOrderSchedule`, and replay coverage for injected-order dispatch.
+- [x] Replay adapter interface supports both external events and injected orders.
+- [x] Added a strategy-experiment configuration model for passive/aggressive mode, side, entry offset, limit price, quantity, and injection timing.
+- [x] Added injected-order construction and single-order scheduling helpers for strategy experiments.
+- [x] Added `StrategyExperimentAdapter` and `StrategyExperimentRunner` scaffolding for single-trial replay experiments.
+- [x] Added a strategy-experiment CLI with configuration parsing for input CSV, output path, mode, side, quantity, and entry offset.
+- [x] Added a stable `StrategyExperimentResult` schema with requested, filled, and remaining quantity; fill rate; average execution price; decision metrics; implementation shortfall; and time-to-fill fields.
+- [x] Added CSV output for strategy-experiment results, including tested passive/aggressive strategy labels and result rows.
+- [x] Added unit-test coverage for strategy-experiment configuration/helpers, adapter initialization and decision-metric capture, runner scaffolding, and CSV writing.
+- [ ] Strategy comparison under replay is still pending: the harness exists, but injected-order fills are not yet fully linked back from matching-engine execution into experiment results.
+- [ ] Real decision-time mid-price/spread capture, timestamp-based time-to-fill, and sign-aware implementation-shortfall calculation are still pending.
+- [ ] Queue-position-aware experiments still depend on richer source data and more complete order-lifecycle reconstruction.
 
 ## Suggested implementation order right now
 
