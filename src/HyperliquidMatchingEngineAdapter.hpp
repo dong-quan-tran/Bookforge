@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <vector>
 
@@ -32,7 +33,11 @@ struct ReplayStats {
 
 class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
   public:
-    explicit HyperliquidMatchingEngineAdapter(MatchingEngine &engine) : engine_(engine) {}
+    using InjectedOrderFillHandler = std::function<void(const InjectedOrder &, const Trade &)>;
+
+    explicit HyperliquidMatchingEngineAdapter(
+        MatchingEngine &engine, InjectedOrderFillHandler injected_order_fill_handler = {})
+        : engine_(engine), injected_order_fill_handler_(std::move(injected_order_fill_handler)) {}
 
     void OnEvent(const ExternalOrderEvent &ev) override {
         ++stats_.totalEvents;
@@ -74,7 +79,16 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     void OnInjectedOrder(const InjectedOrder &order) override {
         ++stats_.injectedOrders;
 
-        SubmitOrder(order.is_buy ? Side::Buy : Side::Sell, order.price, order.quantity);
+        const MatchResult result =
+            SubmitOrder(order.is_buy ? Side::Buy : Side::Sell, order.price, order.quantity);
+
+        if (!injected_order_fill_handler_) {
+            return;
+        }
+
+        for (const auto &trade : result.trades) {
+            injected_order_fill_handler_(order, trade);
+        }
     }
 
     const AdapterMetrics &Metrics() const override {
@@ -94,14 +108,14 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         const Side side = ev.isAsk ? Side::Sell : Side::Buy;
         const std::uint32_t quantity = ToInternalQuantity(ev.size);
 
-        SubmitOrder(side, ev.price, quantity);
+        (void)SubmitOrder(side, ev.price, quantity);
     }
 
-    void SubmitOrder(Side side, double price, std::uint32_t quantity) {
+    MatchResult SubmitOrder(Side side, double price, std::uint32_t quantity) {
         if (quantity == 0) {
             ++stats_.ignoredEvents;
             ++metrics_.ignored;
-            return;
+            return {};
         }
 
         Order order{};
@@ -122,6 +136,8 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         for (const auto &trade : result.trades) {
             trades_.push_back(trade);
         }
+
+        return result;
     }
 
     void HandleCancel(const ExternalOrderEvent &) {
@@ -169,6 +185,7 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
 
   private:
     MatchingEngine &engine_;
+    InjectedOrderFillHandler injected_order_fill_handler_;
     ReplayStats stats_{};
     AdapterMetrics metrics_{};
     std::vector<Trade> trades_{};
