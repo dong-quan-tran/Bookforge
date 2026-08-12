@@ -32,6 +32,8 @@ TEST(StrategyExperimentAdapterTest, InitializesResultFromConfig) {
     EXPECT_DOUBLE_EQ(result.limit_price, 101.5);
     EXPECT_EQ(result.requested_qty, 7U);
     EXPECT_EQ(result.remaining_qty, 7U);
+    EXPECT_FALSE(result.decision_best_bid.has_value());
+    EXPECT_FALSE(result.decision_best_ask.has_value());
     EXPECT_FALSE(result.has_decision_metrics);
 }
 
@@ -87,25 +89,72 @@ TEST(StrategyExperimentAdapterTest, FillQuantityIsClampedToRequestedQuantity) {
     EXPECT_DOUBLE_EQ(result.avg_execution_price, 104.0);
 }
 
-TEST(StrategyExperimentAdapterTest, MarksDecisionMetricsCapturedOnFirstEvent) {
-    StrategyExperimentConfig config;
-    config.mode = StrategyMode::Passive;
-    config.entry_offset = 5;
-    config.is_buy = true;
-    config.limit_price = 100.0;
-    config.quantity = 3;
+TEST(StrategyExperimentAdapterTest, CapturesTwoSidedDecisionBookState) {
+    StrategyExperimentAdapter adapter(MakeConfig(3));
 
-    StrategyExperimentAdapter adapter(config);
+    TopOfBookSnapshot snapshot{};
+    snapshot.best_bid = 99.0;
+    snapshot.best_ask = 101.0;
+    snapshot.mid_price = 100.0;
+    snapshot.spread = 2.0;
 
-    ExternalOrderEvent event{};
+    adapter.CaptureDecisionBookState(snapshot);
 
-    const auto before = adapter.Result();
-    EXPECT_FALSE(before.has_decision_metrics);
+    const auto result = adapter.Result();
 
-    adapter.OnEvent(event);
+    ASSERT_TRUE(result.decision_best_bid.has_value());
+    ASSERT_TRUE(result.decision_best_ask.has_value());
+    EXPECT_DOUBLE_EQ(*result.decision_best_bid, 99.0);
+    EXPECT_DOUBLE_EQ(*result.decision_best_ask, 101.0);
+    EXPECT_DOUBLE_EQ(result.decision_mid_price, 100.0);
+    EXPECT_DOUBLE_EQ(result.decision_spread, 2.0);
+    EXPECT_TRUE(result.has_decision_metrics);
+}
 
-    const auto after = adapter.Result();
-    EXPECT_TRUE(after.has_decision_metrics);
+TEST(StrategyExperimentAdapterTest, EmptyBookSideLeavesMidAndSpreadUnavailable) {
+    StrategyExperimentAdapter adapter(MakeConfig(3));
+
+    TopOfBookSnapshot snapshot{};
+    snapshot.best_bid = 99.0;
+
+    adapter.CaptureDecisionBookState(snapshot);
+
+    const auto result = adapter.Result();
+
+    ASSERT_TRUE(result.decision_best_bid.has_value());
+    EXPECT_DOUBLE_EQ(*result.decision_best_bid, 99.0);
+    EXPECT_FALSE(result.decision_best_ask.has_value());
+    EXPECT_DOUBLE_EQ(result.decision_mid_price, 0.0);
+    EXPECT_DOUBLE_EQ(result.decision_spread, 0.0);
+    EXPECT_FALSE(result.has_decision_metrics);
+}
+
+TEST(StrategyExperimentAdapterTest, CapturesDecisionBookStateOnlyOnce) {
+    StrategyExperimentAdapter adapter(MakeConfig(3));
+
+    TopOfBookSnapshot first{};
+    first.best_bid = 99.0;
+    first.best_ask = 101.0;
+    first.mid_price = 100.0;
+    first.spread = 2.0;
+
+    TopOfBookSnapshot second{};
+    second.best_bid = 98.0;
+    second.best_ask = 102.0;
+    second.mid_price = 100.0;
+    second.spread = 4.0;
+
+    adapter.CaptureDecisionBookState(first);
+    adapter.CaptureDecisionBookState(second);
+
+    const auto result = adapter.Result();
+
+    ASSERT_TRUE(result.decision_best_bid.has_value());
+    ASSERT_TRUE(result.decision_best_ask.has_value());
+    EXPECT_DOUBLE_EQ(*result.decision_best_bid, 99.0);
+    EXPECT_DOUBLE_EQ(*result.decision_best_ask, 101.0);
+    EXPECT_DOUBLE_EQ(result.decision_mid_price, 100.0);
+    EXPECT_DOUBLE_EQ(result.decision_spread, 2.0);
 }
 
 } // namespace

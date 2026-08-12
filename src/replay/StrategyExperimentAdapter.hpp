@@ -16,15 +16,14 @@ class StrategyExperimentAdapter final : public IReplayAdapter {
 
     StrategyExperimentResult Result() const;
 
-    // Hook the replay/matching engine can call when a fill occurs.
     void OnFill(std::uint32_t fill_qty, double fill_price);
+    void CaptureDecisionBookState(const TopOfBookSnapshot &snapshot);
 
   private:
-    void MaybeCaptureDecisionMetrics(const ExternalOrderEvent &event);
-
     StrategyExperimentConfig config_;
     AdapterMetrics metrics_;
     StrategyExperimentResult result_;
+    bool decision_snapshot_captured_{false};
 };
 
 } // namespace bookforge

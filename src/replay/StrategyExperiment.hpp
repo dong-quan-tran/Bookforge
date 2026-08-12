@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 #include "replay/InjectedOrder.hpp"
@@ -32,6 +33,8 @@ struct StrategyExperimentResult {
     double fill_rate{0.0};
     double avg_execution_price{0.0};
 
+    std::optional<double> decision_best_bid;
+    std::optional<double> decision_best_ask;
     double decision_mid_price{0.0};
     double decision_spread{0.0};
     bool has_decision_metrics{false};

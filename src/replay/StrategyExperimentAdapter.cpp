@@ -1,6 +1,7 @@
 #include "replay/StrategyExperimentAdapter.hpp"
 
 #include <algorithm>
+#include <utility>
 
 namespace bookforge {
 
@@ -15,6 +16,8 @@ StrategyExperimentAdapter::StrategyExperimentAdapter(StrategyExperimentConfig co
     result_.remaining_qty = config_.quantity;
     result_.fill_rate = 0.0;
     result_.avg_execution_price = 0.0;
+    result_.decision_best_bid.reset();
+    result_.decision_best_ask.reset();
     result_.decision_mid_price = 0.0;
     result_.decision_spread = 0.0;
     result_.has_decision_metrics = false;
@@ -24,15 +27,11 @@ StrategyExperimentAdapter::StrategyExperimentAdapter(StrategyExperimentConfig co
 }
 
 void StrategyExperimentAdapter::OnEvent(const ExternalOrderEvent &event) {
-    MaybeCaptureDecisionMetrics(event);
     (void)event;
-    // Real implementation will track fills and execution metrics via OnFill.
 }
 
 void StrategyExperimentAdapter::OnInjectedOrder(const InjectedOrder &order) {
     (void)order;
-    // Real implementation will inject into matching engine and update result_
-    // based on fills via OnFill.
 }
 
 const AdapterMetrics &StrategyExperimentAdapter::Metrics() const {
@@ -78,18 +77,26 @@ void StrategyExperimentAdapter::OnFill(std::uint32_t fill_qty, double fill_price
     }
 }
 
-void StrategyExperimentAdapter::MaybeCaptureDecisionMetrics(const ExternalOrderEvent &event) {
-    (void)event;
-
-    // Placeholder implementation:
-    // Capture metrics once on the first event processed.
-    if (result_.has_decision_metrics) {
+void StrategyExperimentAdapter::CaptureDecisionBookState(const TopOfBookSnapshot &snapshot) {
+    if (decision_snapshot_captured_) {
         return;
     }
 
-    // In a fuller implementation, this would inspect book state and compute
-    // mid/spread from the matching engine / order book at decision time.
-    result_.has_decision_metrics = true;
+    decision_snapshot_captured_ = true;
+
+    result_.decision_best_bid = snapshot.best_bid;
+    result_.decision_best_ask = snapshot.best_ask;
+
+    if (snapshot.mid_price.has_value()) {
+        result_.decision_mid_price = *snapshot.mid_price;
+    }
+
+    if (snapshot.spread.has_value()) {
+        result_.decision_spread = *snapshot.spread;
+    }
+
+    result_.has_decision_metrics = snapshot.best_bid.has_value() && snapshot.best_ask.has_value() &&
+                                   snapshot.mid_price.has_value() && snapshot.spread.has_value();
 }
 
 } // namespace bookforge
