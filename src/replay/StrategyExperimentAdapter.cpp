@@ -4,6 +4,24 @@
 #include <utility>
 
 namespace bookforge {
+namespace {
+
+double ComputeImplementationShortfallBps(const StrategyExperimentResult &result) {
+    if (!result.has_decision_metrics || result.filled_qty == 0 ||
+        result.decision_mid_price <= 0.0) {
+        return 0.0;
+    }
+
+    if (result.is_buy) {
+        return (result.avg_execution_price - result.decision_mid_price) /
+               result.decision_mid_price * 10000.0;
+    }
+
+    return (result.decision_mid_price - result.avg_execution_price) / result.decision_mid_price *
+           10000.0;
+}
+
+} // namespace
 
 StrategyExperimentAdapter::StrategyExperimentAdapter(StrategyExperimentConfig config)
     : config_(std::move(config)) {
@@ -47,6 +65,8 @@ StrategyExperimentResult StrategyExperimentAdapter::Result() const {
     } else {
         copy.fill_rate = 0.0;
     }
+
+    copy.implementation_shortfall_bps = ComputeImplementationShortfallBps(copy);
 
     return copy;
 }

@@ -5,14 +5,23 @@
 namespace bookforge {
 namespace {
 
-StrategyExperimentConfig MakeConfig(std::uint32_t quantity) {
+StrategyExperimentConfig MakeConfig(std::uint32_t quantity, bool is_buy = true) {
     StrategyExperimentConfig config;
     config.mode = StrategyMode::Passive;
     config.entry_offset = 5;
-    config.is_buy = true;
+    config.is_buy = is_buy;
     config.limit_price = 100.0;
     config.quantity = quantity;
     return config;
+}
+
+TopOfBookSnapshot MakeTwoSidedSnapshot(double best_bid, double best_ask) {
+    TopOfBookSnapshot snapshot{};
+    snapshot.best_bid = best_bid;
+    snapshot.best_ask = best_ask;
+    snapshot.mid_price = (best_bid + best_ask) / 2.0;
+    snapshot.spread = best_ask - best_bid;
+    return snapshot;
 }
 
 TEST(StrategyExperimentAdapterTest, InitializesResultFromConfig) {
@@ -46,6 +55,7 @@ TEST(StrategyExperimentAdapterTest, NoFillLeavesExecutionMetricsAtDefaults) {
     EXPECT_EQ(result.remaining_qty, 5U);
     EXPECT_DOUBLE_EQ(result.fill_rate, 0.0);
     EXPECT_DOUBLE_EQ(result.avg_execution_price, 0.0);
+    EXPECT_DOUBLE_EQ(result.implementation_shortfall_bps, 0.0);
 }
 
 TEST(StrategyExperimentAdapterTest, PartialFillUpdatesResult) {
@@ -92,13 +102,7 @@ TEST(StrategyExperimentAdapterTest, FillQuantityIsClampedToRequestedQuantity) {
 TEST(StrategyExperimentAdapterTest, CapturesTwoSidedDecisionBookState) {
     StrategyExperimentAdapter adapter(MakeConfig(3));
 
-    TopOfBookSnapshot snapshot{};
-    snapshot.best_bid = 99.0;
-    snapshot.best_ask = 101.0;
-    snapshot.mid_price = 100.0;
-    snapshot.spread = 2.0;
-
-    adapter.CaptureDecisionBookState(snapshot);
+    adapter.CaptureDecisionBookState(MakeTwoSidedSnapshot(99.0, 101.0));
 
     const auto result = adapter.Result();
 
@@ -132,20 +136,8 @@ TEST(StrategyExperimentAdapterTest, EmptyBookSideLeavesMidAndSpreadUnavailable) 
 TEST(StrategyExperimentAdapterTest, CapturesDecisionBookStateOnlyOnce) {
     StrategyExperimentAdapter adapter(MakeConfig(3));
 
-    TopOfBookSnapshot first{};
-    first.best_bid = 99.0;
-    first.best_ask = 101.0;
-    first.mid_price = 100.0;
-    first.spread = 2.0;
-
-    TopOfBookSnapshot second{};
-    second.best_bid = 98.0;
-    second.best_ask = 102.0;
-    second.mid_price = 100.0;
-    second.spread = 4.0;
-
-    adapter.CaptureDecisionBookState(first);
-    adapter.CaptureDecisionBookState(second);
+    adapter.CaptureDecisionBookState(MakeTwoSidedSnapshot(99.0, 101.0));
+    adapter.CaptureDecisionBookState(MakeTwoSidedSnapshot(98.0, 102.0));
 
     const auto result = adapter.Result();
 
@@ -155,6 +147,50 @@ TEST(StrategyExperimentAdapterTest, CapturesDecisionBookStateOnlyOnce) {
     EXPECT_DOUBLE_EQ(*result.decision_best_ask, 101.0);
     EXPECT_DOUBLE_EQ(result.decision_mid_price, 100.0);
     EXPECT_DOUBLE_EQ(result.decision_spread, 2.0);
+}
+
+TEST(StrategyExperimentAdapterTest, BuyPartialFillAboveDecisionMidHasPositiveShortfall) {
+    StrategyExperimentAdapter adapter(MakeConfig(10, true));
+
+    adapter.CaptureDecisionBookState(MakeTwoSidedSnapshot(99.0, 101.0));
+    adapter.OnFill(4, 101.0);
+
+    const auto result = adapter.Result();
+
+    EXPECT_EQ(result.filled_qty, 4U);
+    EXPECT_EQ(result.remaining_qty, 6U);
+    EXPECT_DOUBLE_EQ(result.avg_execution_price, 101.0);
+    EXPECT_NEAR(result.implementation_shortfall_bps, 100.0, 1e-12);
+}
+
+TEST(StrategyExperimentAdapterTest, SellFullFillBelowDecisionMidHasPositiveShortfall) {
+    StrategyExperimentAdapter adapter(MakeConfig(5, false));
+
+    adapter.CaptureDecisionBookState(MakeTwoSidedSnapshot(99.0, 101.0));
+    adapter.OnFill(5, 98.0);
+
+    const auto result = adapter.Result();
+
+    EXPECT_EQ(result.filled_qty, 5U);
+    EXPECT_EQ(result.remaining_qty, 0U);
+    EXPECT_DOUBLE_EQ(result.avg_execution_price, 98.0);
+    EXPECT_NEAR(result.implementation_shortfall_bps, 200.0, 1e-12);
+}
+
+TEST(StrategyExperimentAdapterTest, UnavailableDecisionPriceLeavesShortfallAtZero) {
+    StrategyExperimentAdapter adapter(MakeConfig(5, true));
+
+    TopOfBookSnapshot snapshot{};
+    snapshot.best_bid = 99.0;
+
+    adapter.CaptureDecisionBookState(snapshot);
+    adapter.OnFill(5, 101.0);
+
+    const auto result = adapter.Result();
+
+    EXPECT_EQ(result.filled_qty, 5U);
+    EXPECT_FALSE(result.has_decision_metrics);
+    EXPECT_DOUBLE_EQ(result.implementation_shortfall_bps, 0.0);
 }
 
 } // namespace
