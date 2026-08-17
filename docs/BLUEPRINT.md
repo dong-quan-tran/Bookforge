@@ -351,7 +351,7 @@ These are optional but high-value if time allows.
 - [x] Add synthetic market event generator
 - [ ] Add agent-based simulation mode
 - [x] Allow user-injected orders during historical replay
-- [ ] Compare passive vs aggressive strategy behavior under replay
+- [x] Compare passive vs aggressive strategy behavior under replay
 - [ ] Add queue-position-aware experiments if richer data becomes available
 
 ### Systems / performance
