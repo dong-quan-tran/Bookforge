@@ -1425,3 +1425,37 @@ Ran ctest with --output-on-failure, confirmed:
 Existing order book, matching engine, replay, snapshot, and feature tests still pass.
 
 New strategy experiment CSV writer tests pass after format and duplication fixes.
+
+Progress log: 
+## Phase 10 — Passive vs aggressive replay comparison
+
+Completed the replay strategy-comparison implementation in four focused commits.
+
+1. **Connected injected-order fills to experiment results**
+   - Routed fills produced by an injected experiment order from the matching engine back into `StrategyExperimentAdapter::OnFill`.
+   - Ensured only the experiment’s own injected order updates its result.
+   - Added coverage for no fills, partial fills, multiple fills with weighted average execution price, and fill-quantity clamping.
+
+2. **Captured real decision-time market state**
+   - Replaced the temporary “first replay event” decision-metrics placeholder.
+   - Captured top-of-book state immediately before the experiment order is submitted.
+   - `BeforeEvent` experiments now observe the book before the configured replay event; `AfterEvent` experiments observe the book after it.
+   - Recorded best bid, best ask, mid-price, and spread when a two-sided market is available.
+
+3. **Added execution-quality measurement**
+   - Added sign-aware implementation shortfall in basis points.
+   - For buys, paying above the decision mid produces positive/worse shortfall.
+   - For sells, receiving below the decision mid produces positive/worse shortfall.
+   - Kept fill-latency fields at zero for now because the current matching-engine timestamps are synthetic sequence values rather than replay-time microseconds.
+
+4. **Added passive versus aggressive comparison**
+   - Added a comparison runner that accepts explicit passive and aggressive configurations.
+   - Both strategies must use the same entry offset and replay the same immutable event vector independently.
+   - Results are returned in passive-then-aggressive order and can be written as two reproducible rows using the existing CSV writer.
+   - Added deterministic integration coverage showing a passive order resting without a fill while an aggressive order crosses available liquidity and fills.
+
+Validation:
+- Full project test suite passed.
+- Focused replay, strategy adapter, strategy runner, CSV writer, and comparison integration tests passed.
+- No compiler warnings were reported.
+- Changes were pushed to GitHub after local validation.
