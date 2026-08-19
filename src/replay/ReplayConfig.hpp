@@ -8,6 +8,11 @@ namespace bookforge {
 
 enum class ReplaySource { Hyperliquid, Lobster };
 
+enum class ReplayPacingMode {
+    Unpaced,
+    EventTime,
+};
+
 struct ReplayConfig {
     // Input location
     std::string path;
@@ -21,6 +26,10 @@ struct ReplayConfig {
     // Bounded replay controls for tests and experiments
     std::uint64_t max_events{0};   // 0 = no explicit limit
     std::uint64_t start_offset{0}; // skip first N events, 0 = from beginning
+
+    // Replay pacing. Unpaced preserves current fastest-possible replay behavior.
+    ReplayPacingMode pacing_mode{ReplayPacingMode::Unpaced};
+    double replay_speed{1.0}; // EventTime mode multiplier; must be positive when used.
 
     // Logging / observability
     std::uint64_t log_every_n{0}; // 0 = no periodic progress logging
