@@ -1,11 +1,14 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <string>
 #include <vector>
 
 #include "ExternalOrderEvent.hpp"
 #include "HyperliquidMatchingEngineAdapter.hpp"
+#include "IReplayAdapter.hpp"
 #include "core/matching_engine.hpp"
+#include "replay/ReplayClock.hpp"
 #include "replay/ReplayConfig.hpp"
 #include "replay/ReplayRunner.hpp"
 
@@ -36,6 +39,24 @@ ReplayConfig MakeQuietReplayConfig() {
     return config;
 }
 
+class RecordingReplayAdapter final : public IReplayAdapter {
+  public:
+    void OnEvent(const ExternalOrderEvent &) override {
+        calls.push_back("event");
+    }
+
+    void OnInjectedOrder(const InjectedOrder &order) override {
+        calls.push_back("inject:" + order.order_id);
+    }
+
+    const AdapterMetrics &Metrics() const override {
+        return metrics_;
+    }
+
+    AdapterMetrics metrics_{};
+    std::vector<std::string> calls;
+};
+
 } // namespace
 
 TEST(ReplayConfigTest, DefaultsToUnpacedReplayWithUnitSpeed) {
@@ -63,7 +84,6 @@ TEST(ReplayRunnerTest, ProcessesOnlyBoundedPrefixWhenMaxEventsSet) {
 
     ReplayConfig config = MakeQuietReplayConfig();
     config.max_events = 2;
-    config.start_offset = 0;
 
     MatchingEngine engine;
     HyperliquidMatchingEngineAdapter adapter(engine);
@@ -232,4 +252,86 @@ TEST(ReplayRunnerTest, StartOffsetAtEndProcessesNothing) {
     const auto &stats = adapter.Stats();
     EXPECT_EQ(stats.totalEvents, 0U);
     EXPECT_EQ(stats.submittedOrders, 0U);
+}
+
+TEST(ReplayRunnerPacingTest, EventTimePacingRequestsScaledTimestampDeltas) {
+    const std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.0, 0.01, 1, "open", 100),
+        MakeEvent(EventType::New, false, 99.0, 0.01, 1, "open", 200),
+        MakeEvent(EventType::New, true, 101.0, 0.01, 1, "open", 500),
+    };
+
+    ReplayConfig config = MakeQuietReplayConfig();
+    config.pacing_mode = ReplayPacingMode::EventTime;
+    config.replay_speed = 2.0;
+
+    RecordingReplayClock clock;
+    RecordingReplayAdapter adapter;
+    ReplayRunner runner(config, clock);
+
+    ASSERT_TRUE(runner.Run(adapter, events));
+
+    const auto &requested_sleeps = clock.RequestedSleeps();
+    ASSERT_EQ(requested_sleeps.size(), 2U);
+    EXPECT_EQ(requested_sleeps[0], std::chrono::nanoseconds{50});
+    EXPECT_EQ(requested_sleeps[1], std::chrono::nanoseconds{150});
+}
+
+TEST(ReplayRunnerPacingTest, UnpacedReplayDoesNotRequestSleeps) {
+    const std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.0, 0.01, 1, "open", 100),
+        MakeEvent(EventType::New, false, 99.0, 0.01, 1, "open", 200),
+    };
+
+    ReplayConfig config = MakeQuietReplayConfig();
+    config.pacing_mode = ReplayPacingMode::Unpaced;
+
+    RecordingReplayClock clock;
+    RecordingReplayAdapter adapter;
+    ReplayRunner runner(config, clock);
+
+    ASSERT_TRUE(runner.Run(adapter, events));
+
+    EXPECT_TRUE(clock.RequestedSleeps().empty());
+}
+
+TEST(ReplayRunnerPacingTest, NonMonotonicTimestampsDoNotRequestNegativeSleeps) {
+    const std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.0, 0.01, 1, "open", 500),
+        MakeEvent(EventType::New, false, 99.0, 0.01, 1, "open", 400),
+        MakeEvent(EventType::New, true, 101.0, 0.01, 1, "open", 600),
+    };
+
+    ReplayConfig config = MakeQuietReplayConfig();
+    config.pacing_mode = ReplayPacingMode::EventTime;
+    config.replay_speed = 1.0;
+
+    RecordingReplayClock clock;
+    RecordingReplayAdapter adapter;
+    ReplayRunner runner(config, clock);
+
+    ASSERT_TRUE(runner.Run(adapter, events));
+
+    const auto &requested_sleeps = clock.RequestedSleeps();
+    ASSERT_EQ(requested_sleeps.size(), 1U);
+    EXPECT_EQ(requested_sleeps[0], std::chrono::nanoseconds{200});
+}
+
+TEST(ReplayRunnerPacingTest, NonPositiveReplaySpeedDoesNotRequestSleeps) {
+    const std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.0, 0.01, 1, "open", 100),
+        MakeEvent(EventType::New, false, 99.0, 0.01, 1, "open", 200),
+    };
+
+    ReplayConfig config = MakeQuietReplayConfig();
+    config.pacing_mode = ReplayPacingMode::EventTime;
+    config.replay_speed = 0.0;
+
+    RecordingReplayClock clock;
+    RecordingReplayAdapter adapter;
+    ReplayRunner runner(config, clock);
+
+    ASSERT_TRUE(runner.Run(adapter, events));
+
+    EXPECT_TRUE(clock.RequestedSleeps().empty());
 }

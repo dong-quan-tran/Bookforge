@@ -41,6 +41,7 @@ add_library(bookforge_core
   src/core/price_level.cpp
   src/core/order_book.cpp
   src/core/matching_engine.cpp
+  src/replay/ReplayClock.cpp
   src/snapshot/SnapshotBuilder.cpp
   src/snapshot/SnapshotSerializer.cpp
   src/snapshot/SnapshotComparator.cpp
@@ -112,7 +113,6 @@ bookforge_add_test(test_replay_injected_orders
 
 bookforge_add_test(test_replay_clock
   tests/cpp/test_replay_clock.cpp
-  src/replay/ReplayClock.cpp
 )
 
 bookforge_add_test(test_strategy_experiment
