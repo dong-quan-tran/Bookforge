@@ -110,6 +110,11 @@ bookforge_add_test(test_replay_injected_orders
   src/replay/ReplayRunner.cpp
 )
 
+bookforge_add_test(test_replay_clock
+  tests/cpp/test_replay_clock.cpp
+  src/replay/ReplayClock.cpp
+)
+
 bookforge_add_test(test_strategy_experiment
   tests/cpp/test_strategy_experiment.cpp
   src/replay/StrategyExperiment.cpp
