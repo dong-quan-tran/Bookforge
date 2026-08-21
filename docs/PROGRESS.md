@@ -1488,3 +1488,30 @@ Validation:
 - Full CMake build and CTest suite passed.
 - No compiler warnings were reported.
 - Committed each completed step separately.
+
+##Progress log: August 21, 2026 — Replay latency histograms
+
+Completed the Phase 10 replay latency-histogram work in three focused commits.
+
+1. **Added a deterministic histogram type**
+   - Added `LatencyHistogram` with explicit caller-provided upper-bound buckets.
+   - Tracks sample count, total, min, max, bucket counts, and overflow.
+   - Rejects invalid bucket configurations and ignores negative samples.
+   - Added boundary and validation tests.
+
+2. **Recorded requested replay pacing delays**
+   - Added `ReplayRunMetrics` to `ReplayRunner`.
+   - Records positive event-time pacing delays immediately before they are sent to the replay clock.
+   - Keeps unpaced replay, timestamp regressions, and invalid speed configurations out of the histogram.
+   - Added replay tests for bucket placement, start-offset baseline behavior, and invalid timing cases.
+
+3. **Added CLI histogram reporting**
+   - Added `ReplayMetricsReporter` for stable pacing-delay summaries.
+   - The replay CLI now prints sample count, total requested delay, min/max, overflow, and bucket counts when pacing delays exist.
+   - Unpaced replay output remains concise because no empty histogram block is printed.
+
+Validation:
+- Ran `.\scripts\dev-check.ps1` after each commit.
+- Full build and CTest suite passed.
+- Focused histogram, reporter, and replay-pacing tests passed.
+- No compiler warnings were reported.
