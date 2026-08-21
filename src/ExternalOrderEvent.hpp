@@ -9,6 +9,7 @@ enum class EventType { New, Cancel, Fill, Reject, Trigger, Other };
 
 struct ExternalOrderEvent {
     std::chrono::nanoseconds ts;
+    std::string symbol;
     double price;
     double size;
     bool isAsk;             // true = ask, false = bid
