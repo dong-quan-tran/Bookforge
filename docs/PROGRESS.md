@@ -1459,3 +1459,32 @@ Validation:
 - Focused replay, strategy adapter, strategy runner, CSV writer, and comparison integration tests passed.
 - No compiler warnings were reported.
 - Changes were pushed to GitHub after local validation.
+
+##Progress log: August 19, 2026 — Deterministic replay pacing
+
+Worked on the Phase 10 deterministic replay pacing task in three small commits.
+
+1. **Added replay pacing configuration**
+   - Added `ReplayPacingMode` with `Unpaced` and `EventTime` modes.
+   - Added `replay_speed` to `ReplayConfig`.
+   - Kept `Unpaced` with speed `1.0` as the default, so existing replay behavior remains unchanged.
+
+2. **Added a replay clock interface**
+   - Added `IReplayClock` as a small boundary for requested replay delays.
+   - Added `WallClockReplayClock` for real runtime sleeping.
+   - Added `RecordingReplayClock` for deterministic tests that record requested waits without sleeping.
+   - Added tests for positive, zero, and negative duration handling.
+
+3. **Applied event-time pacing in the replay runner**
+   - `ReplayRunner` can now calculate timestamp deltas between processed events when `EventTime` pacing is enabled.
+   - Requested delay is scaled by `replay_speed`.
+   - First processed event does not wait.
+   - Timestamp regressions and invalid/non-positive replay speeds request no wait.
+   - Existing injected-order order is preserved: pacing occurs before `BeforeEvent` injected orders, then the external event, then `AfterEvent` injected orders.
+   - Added deterministic replay-runner tests for scaled timestamp deltas, unpaced behavior, non-monotonic timestamps, and invalid speed handling.
+
+Validation:
+- Ran `.\scripts\dev-check.ps1` after each commit.
+- Full CMake build and CTest suite passed.
+- No compiler warnings were reported.
+- Committed each completed step separately.
