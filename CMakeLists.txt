@@ -115,6 +115,11 @@ bookforge_add_test(test_replay_clock
   tests/cpp/test_replay_clock.cpp
 )
 
+bookforge_add_test(test_latency_histogram
+  tests/cpp/test_latency_histogram.cpp
+  src/replay/LatencyHistogram.cpp
+)
+
 bookforge_add_test(test_strategy_experiment
   tests/cpp/test_strategy_experiment.cpp
   src/replay/StrategyExperiment.cpp
