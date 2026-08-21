@@ -17,7 +17,7 @@ Bookforge bridges that gap with:
 
 - A replayable order-book and matching-engine core
 - Reproducible snapshot and feature export
-- A strategy-experiment scaffold for comparing execution approaches under replay
+- A strategy-experiment framework for comparing execution approaches under replay
 - A Python research workflow for modeling and evaluation
 - An API/dashboard layer for inspection and demos
 
@@ -30,10 +30,11 @@ This makes it useful both as:
 
 - C++20 matching engine and price-time-priority order book
 - Deterministic replay pipeline for external market-event playback
+- Event-time replay pacing with a configurable speed multiplier
 - Hyperliquid-style CSV ingestion path for replay experiments
 - Snapshot export and comparison for reproducibility and checkpoint validation
 - Feature export for microstructure research, including spread, mid-price, depth imbalance, and OFI
-- Strategy-experiment CLI, runner, adapter, and CSV-result writer for passive/aggressive experiment scaffolding
+- Strategy-experiment runner, injected-order support, passive/aggressive comparison, and CSV-result writer
 - Experiment-result schema covering requested, filled, and remaining quantity; fill rate; average execution price; decision-time metrics; implementation shortfall; and time-to-fill fields
 - Python dataset and modeling layer for training short-horizon predictive baselines
 - Walk-forward evaluation, feature-importance export, optional SHAP analysis, and MLflow tracking
@@ -47,24 +48,44 @@ This makes it useful both as:
 - C++20 matching engine
 - Price-time-priority order book
 - Replay runner and replay-adapter architecture
+- Optional event-time pacing with deterministic requested-delay calculations
 - Hyperliquid-style CSV reader for external order-event data
 - Snapshot builder, serializer, deserializer, and comparator
 - Feature-extraction pipeline
-- Strategy-experiment configuration, injected-order helpers, adapter, runner, CLI, and CSV writer
+- Strategy-experiment configuration, injected-order helpers, adapter, runner, comparison runner, and CSV writer
 - GoogleTest coverage for core engine, replay, snapshot, feature, and strategy-experiment logic
 - Google Benchmark coverage for order-book hot paths and replay throughput
 
+### Replay pacing
+
+Replay remains **unpaced by default**, preserving fastest-possible event processing for benchmarks and normal test runs.
+
+When event-time pacing is enabled, Bookforge calculates the non-negative timestamp delta between consecutive processed replay events and requests a scaled delay:
+
+\[
+\text{requested delay} =
+\frac{\max(0,\ t_i - t_{i-1})}{\text{replay speed}}
+\]
+
+- The first processed event does not wait.
+- `start_offset` establishes a new first-event timing baseline.
+- Non-monotonic timestamps request no negative delay.
+- A positive speed multiplier accelerates replay; for example, `10` replays timestamp gaps at 10x speed.
+- Injected orders retain their ordering around each external event: pacing, `BeforeEvent` orders, external event, then `AfterEvent` orders.
+
 ### Strategy experiments
 
-The strategy-experiment layer is an in-progress execution-analysis harness built around replayed event flow.
+The strategy-experiment layer supports deterministic execution analysis over the replay pipeline.
 
 It currently provides:
 
 - Passive and aggressive strategy modes
+- Explicit passive/aggressive comparison configurations against the same immutable replay-event vector and entry offset
 - Configurable entry offset, side, limit price, quantity, and injection timing
-- A replay adapter that initializes decision-time and execution-quality result fields
-- A runner scaffold that feeds replay events through the adapter
+- Injected-order fill linkage from matching-engine trades into experiment results
+- Decision-time top-of-book capture immediately before injected-order submission
 - CSV result export with a stable, tested schema
+- Sign-aware implementation shortfall in basis points
 - A CLI entry point for parsing experiment configuration
 
 The result schema includes:
@@ -75,7 +96,7 @@ The result schema includes:
 - `implementation_shortfall_bps`
 - `time_to_first_fill_us` and `time_to_full_fill_us`
 
-The current harness is intentionally incremental. Real injected-order fill linkage, full decision-time order-book capture, timestamp-based fill timing, and implementation-shortfall calculation are still being wired into the replay path.
+Timestamp-based fill timing remains deferred because current matching-engine timestamps are synthetic sequence values rather than normalized replay-time microseconds.
 
 ### Python research layer
 
@@ -107,6 +128,8 @@ The current harness is intentionally incremental. Real injected-order fill linka
 Bookforge includes a microbenchmark for order-book hot paths and a replay benchmark for end-to-end event processing.
 
 The replay benchmark uses a larger synthetic CSV fixture so throughput numbers are meaningful rather than dominated by benchmark overhead. On the current large fixture, the replay benchmark reports roughly **4.4M–4.7M events/sec** in Release mode on Windows, which is a useful baseline for future changes.
+
+Run throughput benchmarks with default unpaced replay. Event-time pacing intentionally includes waiting and is therefore not a throughput benchmark mode.
 
 ## Why it matters
 
@@ -237,6 +260,58 @@ PYTHONPATH=python python -m pytest tests/python -q
 ```
 
 ## Usage
+
+### Replay Hyperliquid-style CSV data
+
+#### Windows PowerShell
+
+```powershell
+.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv
+```
+
+#### macOS / Linux
+
+```bash
+./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv
+```
+
+### Replay with event-time pacing
+
+By default, replay is unpaced and processes events as quickly as possible.
+
+#### Windows PowerShell
+
+```powershell
+# Preserve default fastest-possible replay behavior.
+.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --pacing unpaced
+
+# Wait for recorded event-time gaps.
+.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --pacing event-time
+
+# Replay recorded timestamp gaps at 10x speed.
+.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --pacing event-time --speed 10
+```
+
+#### macOS / Linux
+
+```bash
+# Preserve default fastest-possible replay behavior.
+./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --pacing unpaced
+
+# Wait for recorded event-time gaps.
+./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --pacing event-time
+
+# Replay recorded timestamp gaps at 10x speed.
+./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --pacing event-time --speed 10
+```
+
+Supported replay options:
+
+```text
+[input_csv]
+--pacing unpaced|event-time
+--speed <positive-number>
+```
 
 ### Export features from replay data
 
@@ -399,10 +474,10 @@ The repository uses a root `.clang-format` file and checks formatting in CI.
 For a one-command local check, use the PowerShell helper:
 
 ```powershell
-.\scripts\dev-check.ps1 -Files src\replay\StrategyExperiment.hpp,src\replay\StrategyExperiment.cpp,src\replay\StrategyExperimentAdapter.hpp,src\replay\StrategyExperimentAdapter.cpp,src\replay\StrategyExperimentRunner.cpp,src\replay\StrategyExperimentCsvWriter.hpp,src\replay\StrategyExperimentCsvWriter.cpp,tests\cpp\test_strategy_experiment.cpp,tests\cpp\test_strategy_experiment_adapter.cpp,tests\cpp\test_strategy_experiment_runner.cpp,tests\cpp\test_strategy_experiment_csv_writer.cpp
+.\scripts\dev-check.ps1
 ```
 
-This formats the listed files, then runs the CMake build and CTest suite.
+This formats C++ source/header files under `src`, `tests`, and `bench`, then runs the CMake build and CTest suite.
 
 The repository also uses `.gitattributes` to keep line endings consistent across platforms.
 
@@ -412,7 +487,8 @@ The repository also uses `.gitattributes` to keep line endings consistent across
 - It is **not** a production trading system.
 - The current Hyperliquid replay path is still an approximation of full lifecycle behavior.
 - External/internal cancel and fill linkage is still evolving.
-- The strategy-experiment layer currently provides tested configuration, result-schema, adapter, runner, CLI, and CSV-export plumbing; real fill linkage and execution-quality calculations remain in progress.
+- Matching-engine timestamps used by the current replay adapter are synthetic sequence values; they are not yet suitable for time-to-fill measurements.
+- Event-time pacing uses input event timestamps and wall-clock sleeping, so it is intended for controlled replay behavior rather than maximum throughput.
 - The baseline ML pipeline works, but label quality and class balance remain active research problems.
 
 ## Additional documentation
