@@ -407,4 +407,4 @@ TEST(ReplayRunnerPacingTest, StartOffsetResetsPacingHistogramBaseline) {
     EXPECT_EQ(histogram.Max(), std::chrono::nanoseconds{10000});
 }
 
-} // namespace bookforge
+} // namespace
