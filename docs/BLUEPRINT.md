@@ -383,8 +383,12 @@ These are optional but high-value if time allows.
 - [x] Added a stable `StrategyExperimentResult` schema with requested, filled, and remaining quantity; fill rate; average execution price; decision metrics; implementation shortfall; and time-to-fill fields.
 - [x] Added CSV output for strategy-experiment results, including tested passive/aggressive strategy labels and result rows.
 - [x] Added unit-test coverage for strategy-experiment configuration/helpers, adapter initialization and decision-metric capture, runner scaffolding, and CSV writing.
-- [ ] Strategy comparison under replay is still pending: the harness exists, but injected-order fills are not yet fully linked back from matching-engine execution into experiment results.
-- [ ] Real decision-time mid-price/spread capture, timestamp-based time-to-fill, and sign-aware implementation-shortfall calculation are still pending.
+- [x] Strategy comparison under replay runs passive and aggressive configurations against the same replay events and entry offset.
+- [x] Injected-order fills are linked from matching-engine trades into experiment results, including filled quantity, remaining quantity, fill rate, and weighted average execution price.
+- [x] Decision-time top-of-book state is captured immediately before injected-order submission, with `BeforeEvent` and `AfterEvent` timing semantics preserved.
+- [x] Sign-aware implementation shortfall is calculated when a valid decision-time mid-price and execution price are available.
+- [x] Deterministic replay pacing supports unpaced and event-time modes, a configurable speed multiplier, a wall-clock implementation, and a recording test clock.
+- [ ] Timestamp-based time-to-fill remains deferred because the matching-engine timestamps are synthetic sequence values rather than normalized replay-time microseconds.
 - [ ] Queue-position-aware experiments still depend on richer source data and more complete order-lifecycle reconstruction.
 
 ## Suggested implementation order right now
