@@ -84,6 +84,10 @@ bookforge_add_test(test_hyperliquid_matching_engine_adapter
   tests/cpp/test_hyperliquid_matching_engine_adapter.cpp
 )
 
+bookforge_add_test(test_multi_symbol_replay_adapter
+  tests/cpp/test_multi_symbol_replay_adapter.cpp
+)
+
 bookforge_add_test(test_hyperliquid_csv_reader
   tests/cpp/test_hyperliquid_csv_reader.cpp
   src/HyperliquidCsvReader.cpp
