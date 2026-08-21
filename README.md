@@ -1,8 +1,8 @@
-# Bookforge
+﻿# Bookforge
 
 Bookforge is a hybrid **C++ + Python** market-microstructure project for studying how a modern limit-order book behaves under replayed market-event flow.
 
-At its core is a low-latency **C++20 matching engine** with a price-time-priority order book, deterministic replay infrastructure, snapshot export, feature export, strategy-experiment scaffolding, and regression-tested historical event playback. On top of that, the repository includes a Python research layer for dataset construction, short-horizon machine learning, walk-forward evaluation, experiment tracking with MLflow, and a lightweight **FastAPI + React dashboard** for inspection and demos.
+At its core is a low-latency **C++20 matching engine** with a price-time-priority order book, deterministic replay infrastructure, multi-symbol replay routing, snapshot export, feature export, strategy-experiment scaffolding, and regression-tested historical event playback. On top of that, the repository includes a Python research layer for dataset construction, short-horizon machine learning, walk-forward evaluation, experiment tracking with MLflow, and a lightweight **FastAPI + React dashboard** for inspection and demos.
 
 ## Purpose
 
@@ -30,6 +30,8 @@ This makes it useful both as:
 
 - C++20 matching engine and price-time-priority order book
 - Deterministic replay pipeline for external market-event playback
+- Isolated matching-engine books for each replayed symbol
+- Optional per-symbol replay filtering with deterministic sorted summaries
 - Event-time replay pacing with a configurable speed multiplier
 - Hyperliquid-style CSV ingestion path for replay experiments
 - Snapshot export and comparison for reproducibility and checkpoint validation
@@ -48,6 +50,7 @@ This makes it useful both as:
 - C++20 matching engine
 - Price-time-priority order book
 - Replay runner and replay-adapter architecture
+- Independent matching-engine instances for symbol-bearing replay data
 - Optional event-time pacing with deterministic requested-delay calculations
 - Hyperliquid-style CSV reader for external order-event data
 - Snapshot builder, serializer, deserializer, and comparator
@@ -55,6 +58,18 @@ This makes it useful both as:
 - Strategy-experiment configuration, injected-order helpers, adapter, runner, comparison runner, and CSV writer
 - GoogleTest coverage for core engine, replay, snapshot, feature, and strategy-experiment logic
 - Google Benchmark coverage for order-book hot paths and replay throughput
+
+### Multi-symbol replay
+
+Bookforge routes each symbol-bearing replay event to an independent matching engine and adapter. This prevents orders from one instrument from interacting with liquidity in another instrument, even when they share the same price.
+
+When replaying a CSV with multiple symbols:
+
+- Each symbol receives an isolated order book and matching engine.
+- Cross-symbol orders cannot produce trades.
+- Final symbol summaries are printed in sorted symbol order.
+- `--symbol <symbol>` filters the input before replay, so pacing, metrics, and final-book output apply only to the selected instrument.
+- CSV rows without a symbol are routed to the configured fallback symbol, currently `BTCUSDT.P`, preserving compatibility with legacy symbol-less input files.
 
 ### Replay pacing
 
@@ -275,6 +290,34 @@ PYTHONPATH=python python -m pytest tests/python -q
 ./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv
 ```
 
+When a CSV contains multiple symbols, replay prints a separate final-book summary for each symbol in sorted symbol order.
+
+### Replay one symbol
+
+Use `--symbol <symbol>` to replay one instrument from a symbol-bearing CSV.
+
+#### Windows PowerShell
+
+```powershell
+.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --symbol BTCUSDT.P
+```
+
+#### macOS / Linux
+
+```bash
+./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --symbol BTCUSDT.P
+```
+
+The filter is applied before replay. As a result, event-time pacing, replay metrics, trade counts, and final-book summaries represent only the selected symbol.
+
+For legacy CSV files without a symbol column, Bookforge uses the configured fallback symbol, currently `BTCUSDT.P`. Therefore:
+
+```powershell
+.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --symbol BTCUSDT.P
+```
+
+includes symbol-less rows, while a different symbol filter excludes them.
+
 ### Replay with event-time pacing
 
 By default, replay is unpaced and processes events as quickly as possible.
@@ -290,6 +333,9 @@ By default, replay is unpaced and processes events as quickly as possible.
 
 # Replay recorded timestamp gaps at 10x speed.
 .\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --pacing event-time --speed 10
+
+# Replay one symbol using recorded event-time gaps.
+.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --symbol BTCUSDT.P --pacing event-time
 ```
 
 #### macOS / Linux
@@ -303,12 +349,16 @@ By default, replay is unpaced and processes events as quickly as possible.
 
 # Replay recorded timestamp gaps at 10x speed.
 ./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --pacing event-time --speed 10
+
+# Replay one symbol using recorded event-time gaps.
+./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --symbol BTCUSDT.P --pacing event-time
 ```
 
 Supported replay options:
 
 ```text
 [input_csv]
+--symbol <symbol>
 --pacing unpaced|event-time
 --speed <positive-number>
 ```

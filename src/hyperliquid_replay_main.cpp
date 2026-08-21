@@ -1,13 +1,16 @@
-#include <exception>
+﻿#include <exception>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "HyperliquidCsvReader.hpp"
 #include "replay/MultiSymbolReplayAdapter.hpp"
 #include "replay/ReplayConfig.hpp"
 #include "replay/ReplayMetricsReporter.hpp"
 #include "replay/ReplayRunner.hpp"
+#include "replay/SymbolReplayFilter.hpp"
 
 using namespace bookforge;
 
@@ -16,7 +19,8 @@ namespace {
 void PrintUsage(const char *program_name) {
     std::cout << "Usage:\n"
               << "  " << program_name
-              << " [input_csv] [--pacing unpaced|event-time] [--speed <positive-number>]\n";
+              << " [input_csv] [--symbol <symbol>]"
+                 " [--pacing unpaced|event-time] [--speed <positive-number>]\n";
 }
 
 bool ParsePacingMode(const std::string &value, ReplayPacingMode &pacing_mode) {
@@ -52,7 +56,7 @@ void PrintOptionalPrice(const char *label, const std::optional<double> &price) {
     }
 }
 
-bool ParseArgs(int argc, char **argv, ReplayConfig &config) {
+bool ParseArgs(int argc, char **argv, ReplayConfig &config, std::string &selected_symbol) {
     bool input_path_seen = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -61,6 +65,21 @@ bool ParseArgs(int argc, char **argv, ReplayConfig &config) {
         if (argument == "--help" || argument == "-h") {
             PrintUsage(argv[0]);
             return false;
+        }
+
+        if (argument == "--symbol") {
+            if (i + 1 >= argc) {
+                std::cerr << "Missing value for --symbol.\n";
+                return false;
+            }
+
+            selected_symbol = argv[++i];
+            if (selected_symbol.empty()) {
+                std::cerr << "Invalid --symbol value. Expected a non-empty symbol.\n";
+                return false;
+            }
+
+            continue;
         }
 
         if (argument == "--pacing") {
@@ -124,17 +143,20 @@ void PrintSymbolSummary(const std::string &symbol, const MultiSymbolReplayAdapte
     }
 
     const ReplayStats &stats = symbol_adapter->Stats();
-    const TopOfBookSnapshot book = engine->CaptureTopOfBook();
+    const auto best_bid = engine->Book().GetBestBid();
+    const auto best_ask = engine->Book().GetBestAsk();
+    const auto mid = engine->Book().GetMidPrice();
+    const auto spread = engine->Book().GetSpread();
 
     std::cout << "Symbol: " << symbol << '\n'
               << "  Events: " << stats.totalEvents << '\n'
               << "  Submitted orders: " << stats.submittedOrders << '\n'
               << "  Generated trades: " << stats.generatedTrades << '\n';
 
-    PrintOptionalPrice("  Final best bid: ", book.best_bid);
-    PrintOptionalPrice("  Final best ask: ", book.best_ask);
-    PrintOptionalPrice("  Final mid-price: ", book.mid_price);
-    PrintOptionalPrice("  Final spread: ", book.spread);
+    PrintOptionalPrice("  Final best bid: ", best_bid);
+    PrintOptionalPrice("  Final best ask: ", best_ask);
+    PrintOptionalPrice("  Final mid-price: ", mid);
+    PrintOptionalPrice("  Final spread: ", spread);
 }
 
 } // namespace
@@ -154,18 +176,23 @@ int main(int argc, char **argv) {
         config.log_errors = true;
         config.strict_mode = false;
 
-        if (!ParseArgs(argc, argv, config)) {
+        std::string selected_symbol;
+
+        if (!ParseArgs(argc, argv, config, selected_symbol)) {
             PrintUsage(argv[0]);
             return 1;
         }
 
         HyperliquidCsvReader reader(config.path);
-        const auto events = reader.read_all(config.strict_mode, config.log_errors);
+        const std::vector<ExternalOrderEvent> events =
+            reader.read_all(config.strict_mode, config.log_errors);
+        const std::vector<ExternalOrderEvent> replay_events =
+            FilterReplayEventsBySymbol(events, selected_symbol, config.symbol);
 
         MultiSymbolReplayAdapter adapter(config.symbol);
 
         ReplayRunner runner(config);
-        if (!runner.Run(adapter, events)) {
+        if (!runner.Run(adapter, replay_events)) {
             std::cerr << "Replay runner failed.\n";
             return 1;
         }
@@ -174,7 +201,16 @@ int main(int argc, char **argv) {
 
         std::cout << "Replay configuration:\n"
                   << "Input: " << config.path << '\n'
-                  << "Fallback symbol: " << config.symbol << '\n'
+                  << "Fallback symbol: " << config.symbol << '\n';
+
+        if (selected_symbol.empty()) {
+            std::cout << "Symbol filter: all\n";
+        } else {
+            std::cout << "Symbol filter: " << selected_symbol << '\n';
+        }
+
+        std::cout << "Input events: " << events.size() << '\n'
+                  << "Replayed events: " << replay_events.size() << '\n'
                   << "Pacing: " << PacingModeName(config.pacing_mode) << '\n'
                   << "Speed: " << config.replay_speed << "x\n"
                   << "Symbols: " << adapter.SymbolCount() << '\n'
