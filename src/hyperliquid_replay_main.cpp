@@ -4,8 +4,7 @@
 #include <string>
 
 #include "HyperliquidCsvReader.hpp"
-#include "HyperliquidMatchingEngineAdapter.hpp"
-#include "core/matching_engine.hpp"
+#include "replay/MultiSymbolReplayAdapter.hpp"
 #include "replay/ReplayConfig.hpp"
 #include "replay/ReplayMetricsReporter.hpp"
 #include "replay/ReplayRunner.hpp"
@@ -43,6 +42,14 @@ const char *PacingModeName(ReplayPacingMode pacing_mode) {
     }
 
     return "unknown";
+}
+
+void PrintOptionalPrice(const char *label, const std::optional<double> &price) {
+    if (price.has_value()) {
+        std::cout << label << *price << '\n';
+    } else {
+        std::cout << label << "n/a\n";
+    }
 }
 
 bool ParseArgs(int argc, char **argv, ReplayConfig &config) {
@@ -108,6 +115,28 @@ bool ParseArgs(int argc, char **argv, ReplayConfig &config) {
     return true;
 }
 
+void PrintSymbolSummary(const std::string &symbol, const MultiSymbolReplayAdapter &adapter) {
+    const MatchingEngine *engine = adapter.FindEngine(symbol);
+    const HyperliquidMatchingEngineAdapter *symbol_adapter = adapter.FindAdapter(symbol);
+
+    if (engine == nullptr || symbol_adapter == nullptr) {
+        return;
+    }
+
+    const ReplayStats &stats = symbol_adapter->Stats();
+    const TopOfBookSnapshot book = engine->CaptureTopOfBook();
+
+    std::cout << "Symbol: " << symbol << '\n'
+              << "  Events: " << stats.totalEvents << '\n'
+              << "  Submitted orders: " << stats.submittedOrders << '\n'
+              << "  Generated trades: " << stats.generatedTrades << '\n';
+
+    PrintOptionalPrice("  Final best bid: ", book.best_bid);
+    PrintOptionalPrice("  Final best ask: ", book.best_ask);
+    PrintOptionalPrice("  Final mid-price: ", book.mid_price);
+    PrintOptionalPrice("  Final spread: ", book.spread);
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -133,8 +162,7 @@ int main(int argc, char **argv) {
         HyperliquidCsvReader reader(config.path);
         const auto events = reader.read_all(config.strict_mode, config.log_errors);
 
-        MatchingEngine engine;
-        HyperliquidMatchingEngineAdapter adapter(engine);
+        MultiSymbolReplayAdapter adapter(config.symbol);
 
         ReplayRunner runner(config);
         if (!runner.Run(adapter, events)) {
@@ -142,56 +170,28 @@ int main(int argc, char **argv) {
             return 1;
         }
 
-        const auto &stats = adapter.Stats();
+        const AdapterMetrics &metrics = adapter.Metrics();
+
         std::cout << "Replay configuration:\n"
-                  << "Input: " << config.path << "\n"
-                  << "Pacing: " << PacingModeName(config.pacing_mode) << "\n"
+                  << "Input: " << config.path << '\n'
+                  << "Fallback symbol: " << config.symbol << '\n'
+                  << "Pacing: " << PacingModeName(config.pacing_mode) << '\n'
                   << "Speed: " << config.replay_speed << "x\n"
-                  << "Total events: " << stats.totalEvents << "\n"
-                  << "New: " << stats.newCount << "\n"
-                  << "Cancel: " << stats.cancelCount << "\n"
-                  << "Fill: " << stats.fillCount << "\n"
-                  << "Reject: " << stats.rejectCount << "\n"
-                  << "Trigger: " << stats.triggerCount << "\n"
-                  << "Other: " << stats.otherCount << "\n"
-                  << "Submitted orders: " << stats.submittedOrders << "\n"
-                  << "Ignored events: " << stats.ignoredEvents << "\n"
-                  << "Generated trades: " << stats.generatedTrades << "\n";
+                  << "Symbols: " << adapter.SymbolCount() << '\n'
+                  << "Submitted orders: " << metrics.submitted << '\n'
+                  << "Ignored events: " << metrics.ignored << '\n'
+                  << "Rejected events: " << metrics.rejected << '\n'
+                  << "Unsupported events: " << metrics.unsupported << '\n';
 
         WriteReplayPacingSummary(std::cout, runner.Metrics());
 
-        const auto best_bid = engine.Book().GetBestBid();
-        const auto best_ask = engine.Book().GetBestAsk();
-        const auto mid = engine.Book().GetMidPrice();
-        const auto spread = engine.Book().GetSpread();
-
-        if (best_bid.has_value()) {
-            std::cout << "Final best bid: " << *best_bid << "\n";
-        } else {
-            std::cout << "Final best bid: n/a\n";
-        }
-
-        if (best_ask.has_value()) {
-            std::cout << "Final best ask: " << *best_ask << "\n";
-        } else {
-            std::cout << "Final best ask: n/a\n";
-        }
-
-        if (mid.has_value()) {
-            std::cout << "Final mid-price: " << *mid << "\n";
-        } else {
-            std::cout << "Final mid-price: n/a\n";
-        }
-
-        if (spread.has_value()) {
-            std::cout << "Final spread: " << *spread << "\n";
-        } else {
-            std::cout << "Final spread: n/a\n";
+        for (const std::string &symbol : adapter.Symbols()) {
+            PrintSymbolSummary(symbol, adapter);
         }
 
         return 0;
     } catch (const std::exception &exception) {
-        std::cerr << "Replay failed: " << exception.what() << "\n";
+        std::cerr << "Replay failed: " << exception.what() << '\n';
         return 1;
     }
 }

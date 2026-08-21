@@ -1,9 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "HyperliquidMatchingEngineAdapter.hpp"
 #include "IReplayAdapter.hpp"
@@ -54,6 +56,19 @@ class MultiSymbolReplayAdapter final : public IReplayAdapter {
         }
 
         return it->second.get();
+    }
+
+    [[nodiscard]] std::vector<std::string> Symbols() const {
+        std::vector<std::string> symbols;
+        symbols.reserve(engines_.size());
+
+        for (const auto &[symbol, engine] : engines_) {
+            (void)engine;
+            symbols.push_back(symbol);
+        }
+
+        std::sort(symbols.begin(), symbols.end());
+        return symbols;
     }
 
     [[nodiscard]] std::size_t SymbolCount() const {

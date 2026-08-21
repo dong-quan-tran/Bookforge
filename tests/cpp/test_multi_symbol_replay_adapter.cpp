@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -107,6 +108,22 @@ TEST(MultiSymbolReplayAdapterTest, IgnoresSymbolLessEventsWithoutFallbackSymbol)
     EXPECT_EQ(adapter.SymbolCount(), 0U);
     EXPECT_EQ(adapter.Metrics().ignored, 1U);
     EXPECT_EQ(adapter.Metrics().submitted, 0U);
+}
+
+TEST(MultiSymbolReplayAdapterTest, ReturnsSymbolsInSortedOrder) {
+    MultiSymbolReplayAdapter adapter;
+
+    adapter.OnEvent(MakeEvent("SOL", EventType::New, false, 100.0, 0.01));
+    adapter.OnEvent(MakeEvent("BTC", EventType::New, false, 101.0, 0.01));
+    adapter.OnEvent(MakeEvent("ETH", EventType::New, false, 102.0, 0.01));
+
+    const std::vector<std::string> expected{
+        "BTC",
+        "ETH",
+        "SOL",
+    };
+
+    EXPECT_EQ(adapter.Symbols(), expected);
 }
 
 TEST(MultiSymbolReplayAdapterTest, ReportsInjectedOrdersAsUnsupportedUntilTheyAreSymbolAware) {
