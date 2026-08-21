@@ -7,6 +7,7 @@
 #include "HyperliquidMatchingEngineAdapter.hpp"
 #include "core/matching_engine.hpp"
 #include "replay/ReplayConfig.hpp"
+#include "replay/ReplayMetricsReporter.hpp"
 #include "replay/ReplayRunner.hpp"
 
 using namespace bookforge;
@@ -156,6 +157,8 @@ int main(int argc, char **argv) {
                   << "Submitted orders: " << stats.submittedOrders << "\n"
                   << "Ignored events: " << stats.ignoredEvents << "\n"
                   << "Generated trades: " << stats.generatedTrades << "\n";
+
+        WriteReplayPacingSummary(std::cout, runner.Metrics());
 
         const auto best_bid = engine.Book().GetBestBid();
         const auto best_ask = engine.Book().GetBestAsk();

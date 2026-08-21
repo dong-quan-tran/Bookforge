@@ -43,6 +43,7 @@ add_library(bookforge_core
   src/core/matching_engine.cpp
   src/replay/LatencyHistogram.cpp
   src/replay/ReplayClock.cpp
+  src/replay/ReplayMetricsReporter.cpp
   src/snapshot/SnapshotBuilder.cpp
   src/snapshot/SnapshotSerializer.cpp
   src/snapshot/SnapshotComparator.cpp
@@ -118,6 +119,10 @@ bookforge_add_test(test_replay_clock
 
 bookforge_add_test(test_latency_histogram
   tests/cpp/test_latency_histogram.cpp
+)
+
+bookforge_add_test(test_replay_metrics_reporter
+  tests/cpp/test_replay_metrics_reporter.cpp
 )
 
 bookforge_add_test(test_strategy_experiment
