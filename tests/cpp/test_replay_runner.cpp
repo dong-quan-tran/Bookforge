@@ -293,6 +293,7 @@ TEST(ReplayRunnerPacingTest, UnpacedReplayDoesNotRequestSleeps) {
     ASSERT_TRUE(runner.Run(adapter, events));
 
     EXPECT_TRUE(clock.RequestedSleeps().empty());
+    EXPECT_TRUE(runner.Metrics().requested_pacing_delays.Empty());
 }
 
 TEST(ReplayRunnerPacingTest, NonMonotonicTimestampsDoNotRequestNegativeSleeps) {
@@ -315,6 +316,10 @@ TEST(ReplayRunnerPacingTest, NonMonotonicTimestampsDoNotRequestNegativeSleeps) {
     const auto &requested_sleeps = clock.RequestedSleeps();
     ASSERT_EQ(requested_sleeps.size(), 1U);
     EXPECT_EQ(requested_sleeps[0], std::chrono::nanoseconds{200});
+
+    const auto &histogram = runner.Metrics().requested_pacing_delays;
+    EXPECT_EQ(histogram.Count(), 1U);
+    EXPECT_EQ(histogram.Total(), std::chrono::nanoseconds{200});
 }
 
 TEST(ReplayRunnerPacingTest, NonPositiveReplaySpeedDoesNotRequestSleeps) {
@@ -334,4 +339,72 @@ TEST(ReplayRunnerPacingTest, NonPositiveReplaySpeedDoesNotRequestSleeps) {
     ASSERT_TRUE(runner.Run(adapter, events));
 
     EXPECT_TRUE(clock.RequestedSleeps().empty());
+    EXPECT_TRUE(runner.Metrics().requested_pacing_delays.Empty());
 }
+
+TEST(ReplayRunnerPacingTest, RecordsRequestedDelaysInHistogramBuckets) {
+    const std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.0, 0.01, 1, "open", 0),
+        MakeEvent(EventType::New, false, 99.0, 0.01, 1, "open", 500),
+        MakeEvent(EventType::New, true, 101.0, 0.01, 1, "open", 5500),
+        MakeEvent(EventType::New, true, 102.0, 0.01, 1, "open", 105500),
+        MakeEvent(EventType::New, true, 103.0, 0.01, 1, "open", 2105500),
+    };
+
+    ReplayConfig config = MakeQuietReplayConfig();
+    config.pacing_mode = ReplayPacingMode::EventTime;
+    config.replay_speed = 1.0;
+
+    RecordingReplayClock clock;
+    RecordingReplayAdapter adapter;
+    ReplayRunner runner(config, clock);
+
+    ASSERT_TRUE(runner.Run(adapter, events));
+
+    const auto &histogram = runner.Metrics().requested_pacing_delays;
+    const auto &buckets = histogram.Buckets();
+
+    ASSERT_EQ(histogram.Count(), 4U);
+    EXPECT_EQ(histogram.Total(), std::chrono::nanoseconds{2105500});
+    EXPECT_EQ(histogram.Min(), std::chrono::nanoseconds{500});
+    EXPECT_EQ(histogram.Max(), std::chrono::nanoseconds{2000000});
+    EXPECT_EQ(histogram.OverflowCount(), 0U);
+
+    ASSERT_EQ(buckets.size(), 7U);
+    EXPECT_EQ(buckets[0].count, 1U);
+    EXPECT_EQ(buckets[1].count, 1U);
+    EXPECT_EQ(buckets[2].count, 1U);
+    EXPECT_EQ(buckets[3].count, 0U);
+    EXPECT_EQ(buckets[4].count, 1U);
+    EXPECT_EQ(buckets[5].count, 0U);
+    EXPECT_EQ(buckets[6].count, 0U);
+}
+
+TEST(ReplayRunnerPacingTest, StartOffsetResetsPacingHistogramBaseline) {
+    const std::vector<ExternalOrderEvent> events{
+        MakeEvent(EventType::New, false, 100.0, 0.01, 1, "open", 0),
+        MakeEvent(EventType::New, false, 99.0, 0.01, 1, "open", 100),
+        MakeEvent(EventType::New, true, 101.0, 0.01, 1, "open", 1100),
+        MakeEvent(EventType::New, true, 102.0, 0.01, 1, "open", 11100),
+    };
+
+    ReplayConfig config = MakeQuietReplayConfig();
+    config.start_offset = 1;
+    config.pacing_mode = ReplayPacingMode::EventTime;
+    config.replay_speed = 1.0;
+
+    RecordingReplayClock clock;
+    RecordingReplayAdapter adapter;
+    ReplayRunner runner(config, clock);
+
+    ASSERT_TRUE(runner.Run(adapter, events));
+
+    const auto &histogram = runner.Metrics().requested_pacing_delays;
+
+    ASSERT_EQ(histogram.Count(), 2U);
+    EXPECT_EQ(histogram.Total(), std::chrono::nanoseconds{11000});
+    EXPECT_EQ(histogram.Min(), std::chrono::nanoseconds{1000});
+    EXPECT_EQ(histogram.Max(), std::chrono::nanoseconds{10000});
+}
+
+} // namespace bookforge

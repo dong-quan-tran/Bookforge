@@ -4,9 +4,18 @@
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 namespace bookforge {
 namespace {
+
+using namespace std::chrono_literals;
+
+std::vector<std::chrono::nanoseconds> DefaultPacingDelayBounds() {
+    return {
+        1us, 10us, 100us, 1ms, 10ms, 100ms, 1s,
+    };
+}
 
 void DispatchInjectedOrders(IReplayAdapter &adapter, const InjectedOrderSchedule &schedule,
                             std::size_t event_index, InjectedOrderTiming timing) {
@@ -44,10 +53,10 @@ std::chrono::nanoseconds ComputePacingDelay(const ExternalOrderEvent &previous,
 
 ReplayRunner::ReplayRunner(const ReplayConfig &config)
     : config_(config), owned_clock_(std::make_unique<WallClockReplayClock>()),
-      clock_(owned_clock_.get()) {}
+      clock_(owned_clock_.get()), metrics_{LatencyHistogram(DefaultPacingDelayBounds())} {}
 
 ReplayRunner::ReplayRunner(const ReplayConfig &config, IReplayClock &clock)
-    : config_(config), clock_(&clock) {}
+    : config_(config), clock_(&clock), metrics_{LatencyHistogram(DefaultPacingDelayBounds())} {}
 
 bool ReplayRunner::Run(IReplayAdapter &adapter,
                        const std::vector<ExternalOrderEvent> &events) const {
@@ -57,6 +66,10 @@ bool ReplayRunner::Run(IReplayAdapter &adapter,
 
 bool ReplayRunner::Run(IReplayAdapter &adapter, const std::vector<ExternalOrderEvent> &events,
                        const InjectedOrderSchedule &schedule) const {
+    metrics_ = ReplayRunMetrics{
+        .requested_pacing_delays = LatencyHistogram(DefaultPacingDelayBounds()),
+    };
+
     const std::size_t total = events.size();
     const std::size_t start =
         static_cast<std::size_t>(config_.start_offset > total ? total : config_.start_offset);
@@ -71,7 +84,12 @@ bool ReplayRunner::Run(IReplayAdapter &adapter, const std::vector<ExternalOrderE
 
         if (config_.pacing_mode == ReplayPacingMode::EventTime && previous_event != nullptr &&
             clock_ != nullptr) {
-            clock_->SleepFor(ComputePacingDelay(*previous_event, events[i], config_.replay_speed));
+            const auto delay = ComputePacingDelay(*previous_event, events[i], config_.replay_speed);
+
+            if (delay > std::chrono::nanoseconds::zero()) {
+                metrics_.requested_pacing_delays.Record(delay);
+                clock_->SleepFor(delay);
+            }
         }
 
         DispatchInjectedOrders(adapter, schedule, i, InjectedOrderTiming::BeforeEvent);
@@ -88,14 +106,19 @@ bool ReplayRunner::Run(IReplayAdapter &adapter, const std::vector<ExternalOrderE
     }
 
     if (config_.log_summary) {
-        const auto &metrics = adapter.Metrics();
+        const auto &adapter_metrics = adapter.Metrics();
         std::cout << "[ReplayRunner] summary"
-                  << " processed=" << processed << " submitted=" << metrics.submitted
-                  << " ignored=" << metrics.ignored << " rejected=" << metrics.rejected
-                  << " unsupported=" << metrics.unsupported << '\n';
+                  << " processed=" << processed << " submitted=" << adapter_metrics.submitted
+                  << " ignored=" << adapter_metrics.ignored
+                  << " rejected=" << adapter_metrics.rejected
+                  << " unsupported=" << adapter_metrics.unsupported << '\n';
     }
 
     return true;
+}
+
+const ReplayRunMetrics &ReplayRunner::Metrics() const {
+    return metrics_;
 }
 
 } // namespace bookforge

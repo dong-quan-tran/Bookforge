@@ -41,6 +41,7 @@ add_library(bookforge_core
   src/core/price_level.cpp
   src/core/order_book.cpp
   src/core/matching_engine.cpp
+  src/replay/LatencyHistogram.cpp
   src/replay/ReplayClock.cpp
   src/snapshot/SnapshotBuilder.cpp
   src/snapshot/SnapshotSerializer.cpp
@@ -117,7 +118,6 @@ bookforge_add_test(test_replay_clock
 
 bookforge_add_test(test_latency_histogram
   tests/cpp/test_latency_histogram.cpp
-  src/replay/LatencyHistogram.cpp
 )
 
 bookforge_add_test(test_strategy_experiment
