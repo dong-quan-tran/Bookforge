@@ -357,7 +357,7 @@ These are optional but high-value if time allows.
 ### Systems / performance
 
 - [ ] Add lock-free replay queue
-- [ ] Add deterministic replay pacing
+- [x] Add deterministic replay pacing
 - [ ] Add latency histograms
 - [ ] Add multi-symbol support
 - [ ] Add binary historical data reader for higher throughput
