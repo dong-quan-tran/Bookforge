@@ -1,13 +1,20 @@
-#include "replay/StrategyExperimentRunner.hpp"
+﻿#include "replay/StrategyExperimentRunner.hpp"
+
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
+
+#include "replay/SymbolReplayFilter.hpp"
 
 namespace bookforge {
 namespace {
 
-ExternalOrderEvent MakeNewEvent(bool is_ask, double price, double size) {
+ExternalOrderEvent MakeNewEvent(bool is_ask, double price, double size,
+                                const std::string &symbol = {}) {
     ExternalOrderEvent event{};
     event.eventType = EventType::New;
+    event.symbol = symbol;
     event.isAsk = is_ask;
     event.price = price;
     event.size = size;
@@ -166,6 +173,36 @@ TEST(StrategyExperimentRunnerTest, OneSidedBookLeavesMidAndSpreadUnavailable) {
     EXPECT_DOUBLE_EQ(result.decision_mid_price, 0.0);
     EXPECT_DOUBLE_EQ(result.decision_spread, 0.0);
     EXPECT_FALSE(result.has_decision_metrics);
+}
+
+TEST(StrategyExperimentRunnerTest, FilteredEventsUseOnlySelectedSymbolLiquidity) {
+    ReplayConfig replay_config;
+    StrategyExperimentRunner runner(replay_config);
+
+    const std::vector<ExternalOrderEvent> input_events{
+        MakeNewEvent(true, 90.0, 0.00002, "ETHUSDT.P"),
+        MakeNewEvent(true, 100.0, 0.00002, "BTCUSDT.P"),
+    };
+
+    const std::vector<ExternalOrderEvent> btc_events =
+        FilterReplayEventsBySymbol(input_events, "BTCUSDT.P", "BTCUSDT.P");
+
+    ASSERT_EQ(btc_events.size(), 1U);
+    EXPECT_EQ(btc_events[0].symbol, "BTCUSDT.P");
+
+    StrategyExperimentConfig config;
+    config.mode = StrategyMode::Aggressive;
+    config.entry_offset = 0;
+    config.timing = InjectedOrderTiming::AfterEvent;
+    config.is_buy = true;
+    config.limit_price = 101.0;
+    config.quantity = 2;
+
+    const auto result = runner.RunOnce(config, btc_events, "experiment-order", "experiment");
+
+    EXPECT_EQ(result.filled_qty, 2U);
+    EXPECT_EQ(result.remaining_qty, 0U);
+    EXPECT_DOUBLE_EQ(result.avg_execution_price, 100.0);
 }
 
 } // namespace

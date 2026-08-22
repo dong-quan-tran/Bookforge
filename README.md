@@ -377,33 +377,56 @@ Supported replay options:
 ./build/feature_export_main --input data/btc_orders_sample_2025-12-15-12.csv --output output/features.csv --symbol BTCUSDT.P --snapshot-depth 10 --imbalance-depth 10 --ofi-depth 10 --rolling-window 50
 ```
 
-### Inspect strategy-experiment CLI options
+### Run a strategy experiment
 
-The strategy-experiment executable currently parses and displays experiment configuration while replay integration continues to evolve.
+The strategy-experiment executable replays Hyperliquid-style CSV events, injects one configured order at the selected event offset, and writes a one-row CSV result containing fill, decision-book, and implementation-shortfall metrics.
+
+`entry-offset` is zero-based and applies after any `--symbol` filtering.
 
 #### Windows PowerShell
 
 ```powershell
-.\build\Debug\strategy_experiment_main.exe --input data\btc_orders_sample_2025-12-15-12.csv --mode passive --side buy --quantity 1 --entry-offset 0
+.\build\Debug\strategy_experiment_main.exe `
+    --input data\btc_orders_sample_2025-12-15-12.csv `
+    --output output\strategy_experiment_results.csv `
+    --symbol BTCUSDT.P `
+    --mode aggressive `
+    --side buy `
+    --limit-price 100000 `
+    --quantity 1 `
+    --entry-offset 0
 ```
 
 #### macOS / Linux
 
 ```bash
-./build/strategy_experiment_main --input data/btc_orders_sample_2025-12-15-12.csv --mode passive --side buy --quantity 1 --entry-offset 0
+./build/strategy_experiment_main \
+    --input data/btc_orders_sample_2025-12-15-12.csv \
+    --output output/strategy_experiment_results.csv \
+    --symbol BTCUSDT.P \
+    --mode aggressive \
+    --side buy \
+    --limit-price 100000 \
+    --quantity 1 \
+    --entry-offset 0
 ```
+
+Use `--symbol <symbol>` to isolate an experiment to one instrument in a multi-symbol CSV. If omitted, all events are replayed. For legacy CSV files without a symbol column, symbol-less rows use the fallback symbol `BTCUSDT.P`.
+
+The current `passive` and `aggressive` modes are recorded in the output result. Set `--limit-price` explicitly to control whether the injected order rests or crosses available liquidity.
 
 Supported options:
 
 ```text
 --input <csv>
 --output <csv>
+--symbol <symbol>
 --mode passive|aggressive
 --side buy|sell
---quantity <N>
---entry-offset <N>
+--limit-price <positive-number>
+--quantity <positive-integer>
+--entry-offset <zero-based-event-index>
 ```
-
 ### Benchmark replay throughput
 
 #### Windows PowerShell
@@ -565,3 +588,4 @@ Bookforge is developed and maintained by:
 - **Dong Quan Tran (Johnny)**
 - Email: [dxt9721@mavs.uta.edu](mailto:dxt9721@mavs.uta.edu) / [dongquan.tran.johnny@gmail.com](mailto:dongquan.tran.johnny@gmail.com)
 - GitHub: [dong-quan-tran](https://github.com/dong-quan-tran)
+
