@@ -1515,3 +1515,147 @@ Validation:
 - Full build and CTest suite passed.
 - Focused histogram, reporter, and replay-pacing tests passed.
 - No compiler warnings were reported.
+
+#Progress Log — August 21, 2026
+
+## Summary
+
+Today focused on making Bookforge’s replay and execution-analysis workflow more observable, multi-symbol-safe, and reproducible.
+
+The replay system now supports deterministic pacing diagnostics, symbol-aware event parsing, isolated books per instrument, replay CLI filtering, symbol-scoped strategy experiments, and a small checked-in multi-symbol fixture for repeatable demos and regression tests.
+
+## Completed
+
+### Replay pacing and latency visibility
+
+- Added a deterministic replay latency histogram.
+- Recorded requested replay pacing delays during event-time replay.
+- Reported replay pacing delay histograms in replay metrics output.
+- Exposed replay pacing controls through the CLI:
+  - `--pacing unpaced|event-time`
+  - `--speed <positive-number>`
+- Updated Phase 10 progress/checklist documentation to reflect completed replay pacing work.
+
+### Multi-symbol ingestion and routing
+
+- Added symbol-aware Hyperliquid event parsing.
+- Preserved legacy compatibility for CSV files without a symbol column.
+- Added isolated multi-symbol replay routing:
+  - Each instrument receives its own `MatchingEngine`.
+  - Each instrument receives its own `HyperliquidMatchingEngineAdapter`.
+  - Orders and liquidity cannot cross between symbols.
+- Added deterministic sorted symbol enumeration for stable output and tests.
+- Added per-symbol final-book replay summaries.
+
+### Replay CLI filtering
+
+- Added `--symbol <symbol>` to `hyperliquid_replay_main`.
+- Applied filtering before replay, so replayed-event counts, pacing, metrics, and book summaries reflect only selected events.
+- Preserved legacy symbol-less CSV support through fallback routing to `BTCUSDT.P`.
+- Added shared `SymbolReplayFilter` logic and unit coverage for:
+  - No selected symbol returns all events.
+  - Explicit symbol selection retains only matching rows.
+  - Symbol-less rows match the configured fallback symbol.
+  - Symbol-less rows are excluded for a different selected symbol.
+  - Absent symbols produce an empty replay event set.
+
+### Strategy experiment CLI integration
+
+- Replaced the strategy experiment CLI configuration-printing stub with a working execution path.
+- `strategy_experiment_main` now:
+  - Reads Hyperliquid-style CSV input.
+  - Applies optional symbol filtering.
+  - Builds a `StrategyExperimentConfig`.
+  - Runs `StrategyExperimentRunner`.
+  - Creates output directories when necessary.
+  - Writes one-row experiment result CSV output.
+  - Prints replay counts, selected symbol, fill metrics, decision-book metrics, and implementation shortfall.
+- Added CLI validation for:
+  - Required `--input`.
+  - Required positive `--limit-price`.
+  - Positive `--quantity`.
+  - Valid `--mode` and `--side`.
+  - Valid entry offset relative to the filtered event stream.
+- Added a focused runner test proving a BTC experiment uses only BTC liquidity after filtering and cannot execute against ETH liquidity.
+
+### Reproducible multi-symbol fixture
+
+- Added `tests/fixtures/hyperliquid_multi_symbol_fixture.csv`.
+- The fixture contains explicit, interleaved `BTCUSDT.P` and `ETHUSDT.P` `New` events.
+- Added regression coverage that verifies:
+  - Both symbols build independent final books.
+  - BTC final book: best bid 99.0, best ask 100.0.
+  - ETH final book: best bid 89.0, best ask 90.0.
+  - Sorted symbol output is deterministic.
+  - Filtering to BTC removes ETH book events entirely.
+
+### Documentation and maintenance
+
+- Updated the general README for:
+  - Multi-symbol replay.
+  - Symbol filtering.
+  - Strategy experiment execution.
+  - The deterministic multi-symbol fixture demo.
+- Replaced stale references to the nonexistent `data/processed/hyperliquid_sample.csv`.
+- Documented the checked-in `data/btc_orders_sample_2025-12-15-12.csv` sample:
+  - It is a symbol-less legacy CSV.
+  - It routes through fallback symbol `BTCUSDT.P`.
+  - It is suitable for ingestion and CLI validation.
+  - Its status-oriented rows may not create active liquidity under the current mapping.
+- Fixed replay-runner test namespace/brace issues and confirmed CI remained green.
+
+## Validation completed
+
+- Local CMake Debug builds completed successfully.
+- Focused GoogleTest coverage passed for:
+  - Multi-symbol replay adapter behavior.
+  - Symbol replay filtering.
+  - Strategy experiment runner behavior.
+  - Multi-symbol fixture regression behavior.
+- GitHub Actions checks were green after the replay-runner test fix.
+- Manual validation confirmed the strategy experiment CLI:
+  - Parsed the 100,000-row BTC sample.
+  - Applied fallback routing with `--symbol BTCUSDT.P`.
+  - Ran the experiment pipeline.
+  - Wrote `output/strategy_experiment_results.csv`.
+
+## Key commits
+
+- `Expose replay pacing controls in CLI`
+- `Add deterministic replay latency histogram`
+- `Record replay pacing delay histograms`
+- `Report replay pacing delay histograms`
+- `Add symbol-aware Hyperliquid event parsing`
+- `Add isolated multi-symbol replay routing`
+- `Run replay through isolated symbol books`
+- `Add symbol filtering to replay CLI`
+- `Run symbol-scoped strategy experiments`
+- `Update general README with correct processed data sample`
+- `Add multi-symbol replay fixture`
+
+## Current capabilities
+
+Bookforge can now:
+
+1. Read legacy symbol-less or symbol-bearing Hyperliquid-style CSV event data.
+2. Replay all symbols into separate isolated matching books.
+3. Filter replay to one selected symbol before metrics and pacing are applied.
+4. Print deterministic per-symbol replay summaries.
+5. Run a strategy experiment against a filtered event stream.
+6. Export experiment results to CSV.
+7. Demonstrate and regress-test multi-symbol isolation with a tiny deterministic fixture.
+
+## Remaining follow-up work
+
+- Add executable-level CLI integration tests that invoke replay and strategy binaries against the multi-symbol fixture.
+- Extend strategy experiments with explicit symbol-aware injected orders so future multi-symbol experiment runners do not rely only on pre-filtering.
+- Improve lifecycle handling for external cancel, fill, reject, and status events.
+- Map real event timestamps into matching-engine timing to enable meaningful time-to-fill metrics.
+- Add synthetic multi-symbol market generation with deterministic interleaving and independent price paths.
+- Consider a passive/aggressive comparison CLI mode that writes both experiment rows from one invocation.
+
+## Commits Today
+
+- 16 commits were pushed to `main`.
+- The latest commit is `Add multi-symbol replay fixture`.
+- The repository history now includes the complete replay-pacing and multi-symbol replay milestone sequence.
