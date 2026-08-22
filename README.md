@@ -431,6 +431,49 @@ Supported options:
 --entry-offset <zero-based-event-index>
 ```
 
+### Multi-symbol fixture demo
+
+The repository includes a small deterministic fixture at:
+
+```text
+tests/fixtures/hyperliquid_multi_symbol_fixture.csv
+```
+
+It contains interleaved BTC and ETH `New` events with independent books. Replay all symbols:
+
+```powershell
+.\build\Debug\hyperliquid_replay_main.exe tests\fixtures\hyperliquid_multi_symbol_fixture.csv
+```
+
+Expected final top-of-book levels:
+
+```text
+BTCUSDT.P: best bid 99.0, best ask 100.0
+ETHUSDT.P: best bid 89.0, best ask 90.0
+```
+
+Replay BTC only:
+
+```powershell
+.\build\Debug\hyperliquid_replay_main.exe tests\fixtures\hyperliquid_multi_symbol_fixture.csv --symbol BTCUSDT.P
+```
+
+Run a BTC experiment against only BTC liquidity:
+
+```powershell
+.\build\Debug\strategy_experiment_main.exe `
+    --input tests\fixtures\hyperliquid_multi_symbol_fixture.csv `
+    --output output\btc_fixture_experiment.csv `
+    --symbol BTCUSDT.P `
+    --mode aggressive `
+    --side buy `
+    --limit-price 101 `
+    --quantity 2 `
+    --entry-offset 1
+```
+
+The fixture demonstrates that BTC and ETH liquidity remain isolated. Use it to validate sorted per-symbol replay summaries and `--symbol` filtering. The current fixture quantities are intentionally small and primarily support order-book regression coverage rather than a whole-unit strategy fill demonstration.
+
 ### Benchmark replay throughput
 
 #### Windows PowerShell

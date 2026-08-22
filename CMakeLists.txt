@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.20)
 project(Bookforge VERSION 0.1.0 LANGUAGES CXX)
 
 if(POLICY CMP0135)
