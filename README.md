@@ -1,4 +1,5 @@
-﻿# Bookforge
+﻿@'
+# Bookforge
 
 Bookforge is a hybrid **C++ + Python** market-microstructure project for studying how a modern limit-order book behaves under replayed market-event flow.
 
@@ -101,7 +102,7 @@ It currently provides:
 - Decision-time top-of-book capture immediately before injected-order submission
 - CSV result export with a stable, tested schema
 - Sign-aware implementation shortfall in basis points
-- A CLI entry point for parsing experiment configuration
+- A CLI for loading CSV events, filtering a symbol, running an experiment, and writing a result row
 
 The result schema includes:
 
@@ -276,18 +277,26 @@ PYTHONPATH=python python -m pytest tests/python -q
 
 ## Usage
 
+The repository includes `data/btc_orders_sample_2025-12-15-12.csv`, a 100,000-row Hyperliquid-style BTC order-status sample. Its schema is symbol-less:
+
+```text
+ts,limitPx,sz,isAsk,statusId
+```
+
+Bookforge routes symbol-less rows to the fallback symbol `BTCUSDT.P`. The sample is useful for validating ingestion, replay CLI behavior, fallback symbol routing, and experiment result export. Its status-oriented events may not create active resting liquidity in the current replay adapter, so strategy experiments against this sample can complete with zero fills and unavailable decision-book metrics.
+
 ### Replay Hyperliquid-style CSV data
 
 #### Windows PowerShell
 
 ```powershell
-.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv
+.\build\Debug\hyperliquid_replay_main.exe data\btc_orders_sample_2025-12-15-12.csv
 ```
 
 #### macOS / Linux
 
 ```bash
-./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv
+./build/hyperliquid_replay_main data/btc_orders_sample_2025-12-15-12.csv
 ```
 
 When a CSV contains multiple symbols, replay prints a separate final-book summary for each symbol in sorted symbol order.
@@ -299,24 +308,18 @@ Use `--symbol <symbol>` to replay one instrument from a symbol-bearing CSV.
 #### Windows PowerShell
 
 ```powershell
-.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --symbol BTCUSDT.P
+.\build\Debug\hyperliquid_replay_main.exe data\btc_orders_sample_2025-12-15-12.csv --symbol BTCUSDT.P
 ```
 
 #### macOS / Linux
 
 ```bash
-./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --symbol BTCUSDT.P
+./build/hyperliquid_replay_main data/btc_orders_sample_2025-12-15-12.csv --symbol BTCUSDT.P
 ```
 
 The filter is applied before replay. As a result, event-time pacing, replay metrics, trade counts, and final-book summaries represent only the selected symbol.
 
-For legacy CSV files without a symbol column, Bookforge uses the configured fallback symbol, currently `BTCUSDT.P`. Therefore:
-
-```powershell
-.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --symbol BTCUSDT.P
-```
-
-includes symbol-less rows, while a different symbol filter excludes them.
+For legacy CSV files without a symbol column, Bookforge uses the configured fallback symbol, currently `BTCUSDT.P`. Therefore, the commands above include all rows from the checked-in BTC sample. A different symbol filter excludes those symbol-less rows.
 
 ### Replay with event-time pacing
 
@@ -326,32 +329,32 @@ By default, replay is unpaced and processes events as quickly as possible.
 
 ```powershell
 # Preserve default fastest-possible replay behavior.
-.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --pacing unpaced
+.\build\Debug\hyperliquid_replay_main.exe data\btc_orders_sample_2025-12-15-12.csv --pacing unpaced
 
 # Wait for recorded event-time gaps.
-.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --pacing event-time
+.\build\Debug\hyperliquid_replay_main.exe data\btc_orders_sample_2025-12-15-12.csv --pacing event-time
 
 # Replay recorded timestamp gaps at 10x speed.
-.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --pacing event-time --speed 10
+.\build\Debug\hyperliquid_replay_main.exe data\btc_orders_sample_2025-12-15-12.csv --pacing event-time --speed 10
 
-# Replay one symbol using recorded event-time gaps.
-.\build\Debug\hyperliquid_replay_main.exe data\processed\hyperliquid_sample.csv --symbol BTCUSDT.P --pacing event-time
+# Select legacy symbol-less BTC rows and use event-time pacing.
+.\build\Debug\hyperliquid_replay_main.exe data\btc_orders_sample_2025-12-15-12.csv --symbol BTCUSDT.P --pacing event-time
 ```
 
 #### macOS / Linux
 
 ```bash
 # Preserve default fastest-possible replay behavior.
-./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --pacing unpaced
+./build/hyperliquid_replay_main data/btc_orders_sample_2025-12-15-12.csv --pacing unpaced
 
 # Wait for recorded event-time gaps.
-./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --pacing event-time
+./build/hyperliquid_replay_main data/btc_orders_sample_2025-12-15-12.csv --pacing event-time
 
 # Replay recorded timestamp gaps at 10x speed.
-./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --pacing event-time --speed 10
+./build/hyperliquid_replay_main data/btc_orders_sample_2025-12-15-12.csv --pacing event-time --speed 10
 
-# Replay one symbol using recorded event-time gaps.
-./build/hyperliquid_replay_main data/processed/hyperliquid_sample.csv --symbol BTCUSDT.P --pacing event-time
+# Select legacy symbol-less BTC rows and use event-time pacing.
+./build/hyperliquid_replay_main data/btc_orders_sample_2025-12-15-12.csv --symbol BTCUSDT.P --pacing event-time
 ```
 
 Supported replay options:
@@ -379,7 +382,7 @@ Supported replay options:
 
 ### Run a strategy experiment
 
-The strategy-experiment executable replays Hyperliquid-style CSV events, injects one configured order at the selected event offset, and writes a one-row CSV result containing fill, decision-book, and implementation-shortfall metrics.
+The strategy-experiment executable reads Hyperliquid-style CSV events, applies an optional symbol filter, injects one configured order at the selected event offset, and writes a one-row CSV result containing fill, decision-book, and implementation-shortfall metrics.
 
 `entry-offset` is zero-based and applies after any `--symbol` filtering.
 
@@ -411,7 +414,7 @@ The strategy-experiment executable replays Hyperliquid-style CSV events, injects
     --entry-offset 0
 ```
 
-Use `--symbol <symbol>` to isolate an experiment to one instrument in a multi-symbol CSV. If omitted, all events are replayed. For legacy CSV files without a symbol column, symbol-less rows use the fallback symbol `BTCUSDT.P`.
+Use `--symbol <symbol>` to isolate an experiment to one instrument in a multi-symbol CSV. If omitted, all events are replayed. For the checked-in symbol-less BTC sample, `--symbol BTCUSDT.P` includes all rows through fallback routing.
 
 The current `passive` and `aggressive` modes are recorded in the output result. Set `--limit-price` explicitly to control whether the injected order rests or crosses available liquidity.
 
@@ -427,6 +430,7 @@ Supported options:
 --quantity <positive-integer>
 --entry-offset <zero-based-event-index>
 ```
+
 ### Benchmark replay throughput
 
 #### Windows PowerShell
@@ -562,6 +566,7 @@ The repository also uses `.gitattributes` to keep line endings consistent across
 - External/internal cancel and fill linkage is still evolving.
 - Matching-engine timestamps used by the current replay adapter are synthetic sequence values; they are not yet suitable for time-to-fill measurements.
 - Event-time pacing uses input event timestamps and wall-clock sleeping, so it is intended for controlled replay behavior rather than maximum throughput.
+- The checked-in BTC order-status sample is symbol-less and may not generate active resting liquidity under the current event-status mapping.
 - The baseline ML pipeline works, but label quality and class balance remain active research problems.
 
 ## Additional documentation
@@ -588,4 +593,4 @@ Bookforge is developed and maintained by:
 - **Dong Quan Tran (Johnny)**
 - Email: [dxt9721@mavs.uta.edu](mailto:dxt9721@mavs.uta.edu) / [dongquan.tran.johnny@gmail.com](mailto:dongquan.tran.johnny@gmail.com)
 - GitHub: [dong-quan-tran](https://github.com/dong-quan-tran)
-
+'@ | Set-Content -LiteralPath "README.md" -Encoding utf8
