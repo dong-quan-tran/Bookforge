@@ -18,9 +18,8 @@ namespace {
 
 void PrintUsage(const char *program_name) {
     std::cout << "Usage:\n"
-              << "  " << program_name
-              << " [input_csv] [--symbol <symbol>]"
-                 " [--pacing unpaced|event-time] [--speed <positive-number>]\n";
+              << "  " << program_name << " [input_csv] [--symbol <symbol>]"
+              << " [--pacing unpaced|event-time] [--speed <positive-number>]\n";
 }
 
 bool ParsePacingMode(const std::string &value, ReplayPacingMode &pacing_mode) {
@@ -164,7 +163,7 @@ void PrintSymbolSummary(const std::string &symbol, const MultiSymbolReplayAdapte
 int main(int argc, char **argv) {
     try {
         ReplayConfig config;
-        config.path = "data/processed/hyperliquid_sample.csv";
+        config.path = "data/btc_orders_sample_2025-12-15-12.csv";
         config.symbol = "BTCUSDT.P";
         config.source = ReplaySource::Hyperliquid;
         config.max_events = 0;

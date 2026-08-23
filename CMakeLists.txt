@@ -92,6 +92,15 @@ bookforge_add_test(test_symbol_replay_filter
   tests/cpp/test_symbol_replay_filter.cpp
 )
 
+bookforge_add_test(test_multi_symbol_replay_fixture
+  tests/cpp/test_multi_symbol_replay_fixture.cpp
+  src/HyperliquidCsvReader.cpp
+  src/replay/ReplayRunner.cpp
+)
+target_compile_definitions(test_multi_symbol_replay_fixture PRIVATE
+  BOOKFORGE_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+)
+
 bookforge_add_test(test_hyperliquid_csv_reader
   tests/cpp/test_hyperliquid_csv_reader.cpp
   src/HyperliquidCsvReader.cpp
@@ -210,6 +219,29 @@ target_include_directories(strategy_experiment_main PRIVATE
 target_link_libraries(strategy_experiment_main PRIVATE
   bookforge_core
 )
+
+if(WIN32)
+  add_test(
+    NAME replay_cli_integration
+    COMMAND
+      ${CMAKE_COMMAND} -E env
+      "BOOKFORGE_TEST_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/cli_integration_output"
+      powershell
+      -NoProfile
+      -ExecutionPolicy
+      Bypass
+      -File
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_replay_cli.ps1"
+      -ReplayExecutable
+      "$<TARGET_FILE:hyperliquid_replay_main>"
+      -StrategyExecutable
+      "$<TARGET_FILE:strategy_experiment_main>"
+      -FixturePath
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hyperliquid_multi_symbol_fixture.csv"
+      -OutputDirectory
+      "${CMAKE_CURRENT_BINARY_DIR}/cli_integration_output"
+  )
+endif()
 
 add_executable(feature_export_main
   src/feature_export_main.cpp
