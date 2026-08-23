@@ -1,4 +1,4 @@
-#include "HyperliquidCsvReader.hpp"
+﻿#include "HyperliquidCsvReader.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -15,6 +15,10 @@
 namespace bookforge {
 namespace {
 
+constexpr char kUtf8BomFirstByte = static_cast<char>(0xEF);
+constexpr char kUtf8BomSecondByte = static_cast<char>(0xBB);
+constexpr char kUtf8BomThirdByte = static_cast<char>(0xBF);
+
 std::string trim(const std::string &value) {
     const auto begin = std::find_if_not(value.begin(), value.end(),
                                         [](unsigned char ch) { return std::isspace(ch); });
@@ -27,6 +31,17 @@ std::string trim(const std::string &value) {
     }
 
     return std::string(begin, end);
+}
+
+void StripUtf8Bom(std::string &value) {
+    if (value.size() < 3) {
+        return;
+    }
+
+    if (value[0] == kUtf8BomFirstByte && value[1] == kUtf8BomSecondByte &&
+        value[2] == kUtf8BomThirdByte) {
+        value.erase(0, 3);
+    }
 }
 
 std::vector<std::string> split_csv_simple(const std::string &line) {
@@ -152,7 +167,11 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
         if (!header_read) {
             header_read = true;
 
-            const auto header_fields = split_csv_simple(line);
+            auto header_fields = split_csv_simple(line);
+            if (!header_fields.empty()) {
+                StripUtf8Bom(header_fields.front());
+            }
+
             header_index = BuildHeaderIndex(header_fields);
 
             if (HasHeaderField(header_index, "ts") && HasHeaderField(header_index, "limitPx")) {

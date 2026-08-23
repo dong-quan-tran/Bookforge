@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 
 #include <fstream>
 #include <string>
@@ -11,6 +11,16 @@ namespace {
 
 std::string WriteTempCsv(const std::string &filename, const std::string &content) {
     std::ofstream output(filename, std::ios::trunc);
+    output << content;
+    output.close();
+    return filename;
+}
+
+std::string WriteTempBomCsv(const std::string &filename, const std::string &content) {
+    std::ofstream output(filename, std::ios::binary | std::ios::trunc);
+    output.put(static_cast<char>(0xEF));
+    output.put(static_cast<char>(0xBB));
+    output.put(static_cast<char>(0xBF));
     output << content;
     output.close();
     return filename;
@@ -45,6 +55,25 @@ TEST(HyperliquidCsvReaderTest, ReadsValidRows) {
     EXPECT_EQ(events[1].statusId, 1);
     EXPECT_EQ(events[1].statusText, "open");
     EXPECT_EQ(events[1].eventType, EventType::New);
+}
+
+TEST(HyperliquidCsvReaderTest, ReadsBomPrefixedHeader) {
+    const std::string path =
+        WriteTempBomCsv("hyperliquid_reader_bom_header_test.csv",
+                        "ts,symbol,limitPx,sz,isAsk,statusId,status\n"
+                        "2025-12-15 11:39:39.722049503,BTCUSDT.P,89691.0,0.01672,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].symbol, "BTCUSDT.P");
+    EXPECT_DOUBLE_EQ(events[0].price, 89691.0);
+    EXPECT_DOUBLE_EQ(events[0].size, 0.01672);
+    EXPECT_TRUE(events[0].isAsk);
+    EXPECT_EQ(events[0].statusId, 1);
+    EXPECT_EQ(events[0].statusText, "open");
+    EXPECT_EQ(events[0].eventType, EventType::New);
 }
 
 TEST(HyperliquidCsvReaderTest, ReadsSymbolColumnWhenPresent) {
