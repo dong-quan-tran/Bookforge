@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <algorithm>
 #include <memory>
@@ -26,13 +26,22 @@ class MultiSymbolReplayAdapter final : public IReplayAdapter {
             return;
         }
 
-        auto &adapter = GetOrCreateAdapter(symbol);
+        HyperliquidMatchingEngineAdapter &adapter = GetOrCreateAdapter(symbol);
         adapter.OnEvent(event);
         AccumulateEventMetrics(event);
     }
 
-    void OnInjectedOrder(const InjectedOrder &) override {
-        ++metrics_.unsupported;
+    void OnInjectedOrder(const InjectedOrder &order) override {
+        const std::string symbol = ResolveSymbol(order);
+
+        if (symbol.empty()) {
+            ++metrics_.unsupported;
+            return;
+        }
+
+        HyperliquidMatchingEngineAdapter &adapter = GetOrCreateAdapter(symbol);
+        adapter.OnInjectedOrder(order);
+        ++metrics_.submitted;
     }
 
     const AdapterMetrics &Metrics() const override {
@@ -79,6 +88,14 @@ class MultiSymbolReplayAdapter final : public IReplayAdapter {
     std::string ResolveSymbol(const ExternalOrderEvent &event) const {
         if (!event.symbol.empty()) {
             return event.symbol;
+        }
+
+        return fallback_symbol_;
+    }
+
+    std::string ResolveSymbol(const InjectedOrder &order) const {
+        if (!order.symbol.empty()) {
+            return order.symbol;
         }
 
         return fallback_symbol_;

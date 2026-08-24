@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -14,6 +14,7 @@ struct InjectedOrder {
 
     std::string order_id;
     std::string participant_id;
+    std::string symbol;
 
     bool is_buy{true};
     double price{0.0};

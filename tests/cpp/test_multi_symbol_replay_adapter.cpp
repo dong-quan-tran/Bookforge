@@ -1,6 +1,7 @@
-#include "replay/MultiSymbolReplayAdapter.hpp"
+﻿#include "replay/MultiSymbolReplayAdapter.hpp"
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,18 @@ ExternalOrderEvent MakeEvent(const std::string &symbol, EventType event_type, bo
     event.statusText = "open";
     event.eventType = event_type;
     return event;
+}
+
+InjectedOrder MakeInjectedOrder(const std::string &symbol, bool is_buy, double price,
+                                std::uint32_t quantity) {
+    InjectedOrder order{};
+    order.order_id = "injected-order";
+    order.participant_id = "strategy";
+    order.symbol = symbol;
+    order.is_buy = is_buy;
+    order.price = price;
+    order.quantity = quantity;
+    return order;
 }
 
 TEST(MultiSymbolReplayAdapterTest, CreatesIndependentBooksForDifferentSymbols) {
@@ -110,6 +123,81 @@ TEST(MultiSymbolReplayAdapterTest, IgnoresSymbolLessEventsWithoutFallbackSymbol)
     EXPECT_EQ(adapter.Metrics().submitted, 0U);
 }
 
+TEST(MultiSymbolReplayAdapterTest, RoutesInjectedOrderToItsSelectedSymbol) {
+    MultiSymbolReplayAdapter adapter;
+
+    adapter.OnEvent(MakeEvent("BTC", EventType::New, true, 100.0, 0.01));
+    adapter.OnEvent(MakeEvent("ETH", EventType::New, true, 90.0, 0.01));
+
+    adapter.OnInjectedOrder(MakeInjectedOrder("BTC", true, 101.0, 1000));
+
+    const HyperliquidMatchingEngineAdapter *btc_adapter = adapter.FindAdapter("BTC");
+    const HyperliquidMatchingEngineAdapter *eth_adapter = adapter.FindAdapter("ETH");
+
+    ASSERT_NE(btc_adapter, nullptr);
+    ASSERT_NE(eth_adapter, nullptr);
+
+    ASSERT_EQ(btc_adapter->Trades().size(), 1U);
+    EXPECT_DOUBLE_EQ(btc_adapter->Trades()[0].price, 100.0);
+    EXPECT_EQ(btc_adapter->Trades()[0].side, Side::Buy);
+
+    EXPECT_TRUE(eth_adapter->Trades().empty());
+
+    const MatchingEngine *eth_engine = adapter.FindEngine("ETH");
+    ASSERT_NE(eth_engine, nullptr);
+
+    const auto eth_best_ask = eth_engine->Book().GetBestAsk();
+    ASSERT_TRUE(eth_best_ask.has_value());
+    EXPECT_DOUBLE_EQ(*eth_best_ask, 90.0);
+
+    EXPECT_EQ(adapter.Metrics().submitted, 3U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 0U);
+}
+
+TEST(MultiSymbolReplayAdapterTest, RoutesSymbolLessInjectedOrderToFallbackSymbol) {
+    MultiSymbolReplayAdapter adapter("BTC");
+
+    adapter.OnEvent(MakeEvent("BTC", EventType::New, true, 100.0, 0.01));
+    adapter.OnInjectedOrder(MakeInjectedOrder("", true, 101.0, 1000));
+
+    const HyperliquidMatchingEngineAdapter *btc_adapter = adapter.FindAdapter("BTC");
+    ASSERT_NE(btc_adapter, nullptr);
+
+    ASSERT_EQ(btc_adapter->Trades().size(), 1U);
+    EXPECT_DOUBLE_EQ(btc_adapter->Trades()[0].price, 100.0);
+    EXPECT_EQ(adapter.SymbolCount(), 1U);
+    EXPECT_EQ(adapter.Metrics().submitted, 2U);
+}
+
+TEST(MultiSymbolReplayAdapterTest, RejectsSymbolLessInjectedOrderWithoutFallbackSymbol) {
+    MultiSymbolReplayAdapter adapter;
+
+    adapter.OnInjectedOrder(MakeInjectedOrder("", true, 100.0, 1000));
+
+    EXPECT_EQ(adapter.SymbolCount(), 0U);
+    EXPECT_EQ(adapter.Metrics().submitted, 0U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 1U);
+}
+
+TEST(MultiSymbolReplayAdapterTest, CreatesNewBookForInjectedOrderSymbol) {
+    MultiSymbolReplayAdapter adapter;
+
+    adapter.OnInjectedOrder(MakeInjectedOrder("SOL", true, 150.0, 1000));
+
+    ASSERT_EQ(adapter.SymbolCount(), 1U);
+    EXPECT_NE(adapter.FindEngine("SOL"), nullptr);
+
+    const MatchingEngine *sol_engine = adapter.FindEngine("SOL");
+    ASSERT_NE(sol_engine, nullptr);
+
+    const auto best_bid = sol_engine->Book().GetBestBid();
+    ASSERT_TRUE(best_bid.has_value());
+    EXPECT_DOUBLE_EQ(*best_bid, 150.0);
+
+    EXPECT_EQ(adapter.Metrics().submitted, 1U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 0U);
+}
+
 TEST(MultiSymbolReplayAdapterTest, ReturnsSymbolsInSortedOrder) {
     MultiSymbolReplayAdapter adapter;
 
@@ -124,21 +212,6 @@ TEST(MultiSymbolReplayAdapterTest, ReturnsSymbolsInSortedOrder) {
     };
 
     EXPECT_EQ(adapter.Symbols(), expected);
-}
-
-TEST(MultiSymbolReplayAdapterTest, ReportsInjectedOrdersAsUnsupportedUntilTheyAreSymbolAware) {
-    MultiSymbolReplayAdapter adapter;
-
-    InjectedOrder order{};
-    order.order_id = "injected-order";
-    order.is_buy = true;
-    order.price = 100.0;
-    order.quantity = 1;
-
-    adapter.OnInjectedOrder(order);
-
-    EXPECT_EQ(adapter.SymbolCount(), 0U);
-    EXPECT_EQ(adapter.Metrics().unsupported, 1U);
 }
 
 } // namespace
