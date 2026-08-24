@@ -284,6 +284,12 @@ ts,limitPx,sz,isAsk,statusId
 
 Bookforge routes symbol-less rows to the fallback symbol `BTCUSDT.P`. The sample is useful for validating ingestion, replay CLI behavior, fallback symbol routing, and experiment result export. Its status-oriented events may not create active resting liquidity in the current replay adapter, so strategy experiments against this sample can complete with zero fills and unavailable decision-book metrics.
 
+### Optional external order IDs
+
+For lifecycle-aware replay datasets, the CSV reader preserves one optional external order-ID column. Supported names are `order_id`, `orderId`, and `oid`.
+
+The checked-in BTC sample does not include an external ID field, so Bookforge cannot reliably apply source cancel/fill records to a specific resting internal order from that file. When an explicit ID is available, later replay work can safely link lifecycle events to the corresponding submitted order.
+
 ### Replay Hyperliquid-style CSV data
 
 #### Windows PowerShell

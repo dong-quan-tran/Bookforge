@@ -359,7 +359,9 @@ These are optional but high-value if time allows.
 - [ ] Add lock-free replay queue
 - [x] Add deterministic replay pacing
 - [x] Add latency histograms
-- [ ] Add multi-symbol support
+- [x] Add multi-symbol support
+- [x] Preserve optional external order IDs during CSV ingestion
+- [ ] Link external cancel/fill lifecycle events to resting internal orders when an explicit external ID is available
 - [ ] Add binary historical data reader for higher throughput
 
 ### Product / presentation
@@ -390,6 +392,12 @@ These are optional but high-value if time allows.
 - [x] Deterministic replay pacing supports unpaced and event-time modes, a configurable speed multiplier, a wall-clock implementation, and a recording test clock.
 - [ ] Timestamp-based time-to-fill remains deferred because the matching-engine timestamps are synthetic sequence values rather than normalized replay-time microseconds.
 - [ ] Queue-position-aware experiments still depend on richer source data and more complete order-lifecycle reconstruction.
+- [x] Multi-symbol replay routes each instrument into an isolated matching engine and adapter.
+- [x] Replay and strategy CLIs support symbol filtering, with fallback routing for legacy symbol-less CSV files.
+- [x] Multi-symbol fixture and executable-level CLI integration coverage validate replay summaries, filtering, and isolated liquidity.
+- [x] CSV ingestion tolerates a UTF-8 BOM before the header.
+- [x] Optional external order IDs are preserved when present as `order_id`, `orderId`, or `oid`.
+- [ ] Stateful external cancel/fill linkage remains pending; it will only operate on explicit external IDs and will not infer identity from price, size, or timestamp.
 
 ## Suggested implementation order right now
 
