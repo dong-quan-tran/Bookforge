@@ -297,7 +297,7 @@ oid
 
 The checked-in BTC status sample has no external ID column, so its parsed events retain an empty external ID. Bookforge does not infer order identity from price, size, timestamp, or side. Stateful replay handling for external cancels and fills will only operate when a dataset provides an explicit order identifier.
 
-When a `New` event with an explicit external ID rests in the internal book, a later `Cancel` event with the same ID removes that resting order. Unknown IDs, repeated cancels, empty IDs, and orders that fully crossed at submission are safe no-ops. External fill lifecycle events are still recorded but remain unsupported until partial/full-fill linkage is implemented.
+When a `New` event with an explicit external ID rests in the internal book, a later `Cancel` event with the same ID removes that resting order. Unknown IDs, repeated cancels, empty IDs, and orders that fully crossed at submission are safe no-ops. For explicit external fill linkage, lifecycle CSVs must also provide an executed-quantity column named `fill_size`, `fillSize`, or `fillSz`. Bookforge uses that value only for `Fill` events; it does not infer fill quantity from the generic `sz` field. Partial fills reduce the mapped resting order, while a fill equal to or larger than the remaining quantity removes it.
 
 ### Replay Hyperliquid-style CSV data
 

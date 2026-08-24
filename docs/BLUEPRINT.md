@@ -361,8 +361,7 @@ These are optional but high-value if time allows.
 - [x] Add latency histograms
 - [x] Add multi-symbol support
 - [x] Preserve optional external order IDs during CSV ingestion
-- [x] Link external cancel lifecycle events to resting internal orders when an explicit external ID is available
-- [ ] Link external fill lifecycle events to resting internal orders when an explicit external ID is available
+- [x] Stateful external fill linkage reduces or removes mapped resting orders when an explicit external ID and fill quantity are available.
 - [ ] Add binary historical data reader for higher throughput
 
 ### Product / presentation
