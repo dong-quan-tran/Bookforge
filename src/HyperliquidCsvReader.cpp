@@ -5,6 +5,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -158,6 +159,30 @@ std::string ParseExternalOrderId(const std::vector<std::string> &fields,
     return "";
 }
 
+std::optional<double>
+ParseExternalFillSize(const std::vector<std::string> &fields,
+                      const std::unordered_map<std::string, std::size_t> &header_index) {
+    constexpr const char *kFillSizeColumn = "fill_size";
+    constexpr const char *kFillSizeCamelCaseColumn = "fillSize";
+    constexpr const char *kFillSizeShortColumn = "fillSz";
+
+    const std::string *value = nullptr;
+
+    if (HasHeaderField(header_index, kFillSizeColumn)) {
+        value = &GetOptionalField(fields, header_index, kFillSizeColumn);
+    } else if (HasHeaderField(header_index, kFillSizeCamelCaseColumn)) {
+        value = &GetOptionalField(fields, header_index, kFillSizeCamelCaseColumn);
+    } else if (HasHeaderField(header_index, kFillSizeShortColumn)) {
+        value = &GetOptionalField(fields, header_index, kFillSizeShortColumn);
+    }
+
+    if (value == nullptr || value->empty()) {
+        return std::nullopt;
+    }
+
+    return std::stod(*value);
+}
+
 } // namespace
 
 HyperliquidCsvReader::HyperliquidCsvReader(std::string path) : path_(std::move(path)) {}
@@ -215,6 +240,7 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
                 event.ts = parse_timestamp_stub(fields[0]);
                 event.symbol = "";
                 event.external_order_id = "";
+                event.external_fill_size = std::nullopt;
                 event.price = std::stod(fields[1]);
                 event.size = std::stod(fields[2]);
                 event.isAsk = parse_bool(fields[3]);
@@ -231,6 +257,7 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
                 event.ts = parse_timestamp_stub(GetRequiredField(fields, header_index, "ts"));
                 event.symbol = ParseSymbol(fields, header_index);
                 event.external_order_id = ParseExternalOrderId(fields, header_index);
+                event.external_fill_size = ParseExternalFillSize(fields, header_index);
                 event.price = std::stod(GetRequiredField(fields, header_index, "limitPx"));
                 event.size = std::stod(GetRequiredField(fields, header_index, "sz"));
                 event.isAsk = parse_bool(GetRequiredField(fields, header_index, "isAsk"));
@@ -307,6 +334,30 @@ EventType HyperliquidCsvReader::map_event_type(const std::string &status_text) c
     }
 
     return EventType::Other;
+}
+
+std::optional<double>
+ParseExternalFillSize(const std::vector<std::string> &fields,
+                      const std::unordered_map<std::string, std::size_t> &header_index) {
+    constexpr const char *kFillSizeColumn = "fill_size";
+    constexpr const char *kFillSizeCamelCaseColumn = "fillSize";
+    constexpr const char *kFillSizeShortColumn = "fillSz";
+
+    const std::string *value = nullptr;
+
+    if (HasHeaderField(header_index, kFillSizeColumn)) {
+        value = &GetOptionalField(fields, header_index, kFillSizeColumn);
+    } else if (HasHeaderField(header_index, kFillSizeCamelCaseColumn)) {
+        value = &GetOptionalField(fields, header_index, kFillSizeCamelCaseColumn);
+    } else if (HasHeaderField(header_index, kFillSizeShortColumn)) {
+        value = &GetOptionalField(fields, header_index, kFillSizeShortColumn);
+    }
+
+    if (value == nullptr || value->empty()) {
+        return std::nullopt;
+    }
+
+    return std::stod(*value);
 }
 
 } // namespace bookforge

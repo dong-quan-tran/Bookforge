@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstdint>
 #include <map>
@@ -27,6 +27,8 @@ class OrderBook {
     bool ReduceOrderQuantity(std::uint64_t order_id, std::uint32_t new_quantity);
     bool ReplaceOrder(std::uint64_t order_id, double new_price, std::uint32_t new_quantity,
                       std::uint64_t new_timestamp);
+
+    [[nodiscard]] std::optional<Order> FindOrder(std::uint64_t order_id) const;
 
     [[nodiscard]] std::optional<double> GetBestBid() const;
     [[nodiscard]] std::optional<double> GetBestAsk() const;

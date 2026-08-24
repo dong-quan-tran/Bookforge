@@ -1,6 +1,7 @@
-ts,symbol,order_id,limitPx,sz,isAsk,statusId,status
-2025-12-15 12:01:00.000000000,BTCUSDT.P,btc-ask-1,100.0,0.00002,True,1,open
-2025-12-15 12:01:00.000000100,ETHUSDT.P,eth-bid-1,90.0,0.00002,False,1,open
-2025-12-15 12:01:00.000000200,BTCUSDT.P,btc-ask-1,100.0,0.00002,True,2,canceled
-2025-12-15 12:01:00.000000300,ETHUSDT.P,eth-bid-1,90.0,0.00002,False,3,filled
-2025-12-15 12:01:00.000000400,BTCUSDT.P,btc-unknown,101.0,0.00001,True,2,canceled
+ts,symbol,order_id,limitPx,sz,isAsk,statusId,status,fillSz
+2025-12-15 12:01:00.000000000,BTCUSDT.P,btc-ask-1,100.0,0.00002,True,1,open,
+2025-12-15 12:01:00.000000100,ETHUSDT.P,eth-bid-1,90.0,0.00002,False,1,open,
+2025-12-15 12:01:00.000000200,ETHUSDT.P,eth-bid-1,90.0,0.00001,False,3,partialFill,0.00001
+2025-12-15 12:01:00.000000300,BTCUSDT.P,btc-ask-1,100.0,0.00002,True,2,canceled,
+2025-12-15 12:01:00.000000400,ETHUSDT.P,eth-bid-1,90.0,0.00001,False,3,filled,0.00001
+2025-12-15 12:01:00.000000500,BTCUSDT.P,btc-unknown,101.0,0.00001,True,2,canceled,

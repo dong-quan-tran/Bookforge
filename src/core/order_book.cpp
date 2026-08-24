@@ -1,4 +1,4 @@
-#include "order_book.hpp"
+﻿#include "order_book.hpp"
 
 namespace bookforge {
 
@@ -203,6 +203,15 @@ bool OrderBook::ReplaceOrder(std::uint64_t order_id, double new_price, std::uint
     order_index_.erase(index_it);
 
     return AddOrder(replacement);
+}
+
+std::optional<Order> OrderBook::FindOrder(std::uint64_t order_id) const {
+    const auto index_it = order_index_.find(order_id);
+    if (index_it == order_index_.end()) {
+        return std::nullopt;
+    }
+
+    return *index_it->second.order_it;
 }
 
 std::optional<double> OrderBook::GetBestBid() const {

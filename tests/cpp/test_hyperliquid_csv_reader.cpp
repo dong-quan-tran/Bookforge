@@ -275,6 +275,48 @@ TEST(HyperliquidCsvReaderTest, ReadsFalseIsAskCorrectly) {
     EXPECT_EQ(events[0].eventType, EventType::New);
 }
 
+TEST(HyperliquidCsvReaderTest, ReadsFillSizeColumnWhenPresent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_fill_size_test.csv",
+                     "ts,order_id,limitPx,sz,isAsk,statusId,status,fill_size\n"
+                     "2025-12-15 11:39:39.722049503,order-1,100.0,0.02000,True,3,partialFill,"
+                     "0.00500\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    ASSERT_TRUE(events[0].external_fill_size.has_value());
+    EXPECT_DOUBLE_EQ(*events[0].external_fill_size, 0.00500);
+}
+
+TEST(HyperliquidCsvReaderTest, ReadsCamelCaseFillSizeColumnWhenPresent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_fill_size_camel_case_test.csv",
+                     "ts,order_id,limitPx,sz,isAsk,statusId,status,fillSize\n"
+                     "2025-12-15 11:39:39.722049503,order-1,100.0,0.02000,True,3,filled,"
+                     "0.02000\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    ASSERT_TRUE(events[0].external_fill_size.has_value());
+    EXPECT_DOUBLE_EQ(*events[0].external_fill_size, 0.02000);
+}
+
+TEST(HyperliquidCsvReaderTest, LeavesFillSizeEmptyWhenColumnIsAbsent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_no_fill_size_test.csv",
+                     "ts,order_id,limitPx,sz,isAsk,statusId,status\n"
+                     "2025-12-15 11:39:39.722049503,order-1,100.0,0.02000,True,3,filled\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_FALSE(events[0].external_fill_size.has_value());
+}
 TEST(HyperliquidCsvReaderTest, ReadsMultipleEventTypesInOrder) {
     const std::string path = WriteTempCsv(
         "hyperliquid_reader_multiple_types_test.csv",

@@ -180,6 +180,86 @@ TEST(HyperliquidMatchingEngineAdapterTest, FullyCrossedNewOrderIsNotRegisteredFo
     EXPECT_FALSE(engine.Book().GetBestAsk().has_value());
 }
 
+TEST(HyperliquidMatchingEngineAdapterTest, PartialFillReducesMappedRestingOrder) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    ExternalOrderEvent new_event =
+        MakeEvent(EventType::New, true, 100.00, 0.00002, 1, "open", "external-ask-1");
+    adapter.OnEvent(new_event);
+
+    ExternalOrderEvent fill_event =
+        MakeEvent(EventType::Fill, true, 100.00, 0.00001, 3, "partialFill", "external-ask-1");
+    fill_event.external_fill_size = 0.00001;
+    adapter.OnEvent(fill_event);
+
+    const auto ask_depth = engine.Book().GetAskDepth(1);
+    ASSERT_EQ(ask_depth.size(), 1U);
+    EXPECT_DOUBLE_EQ(ask_depth[0].first, 100.00);
+    EXPECT_EQ(ask_depth[0].second, 1U);
+
+    EXPECT_EQ(adapter.Stats().externallyFilledOrders, 1U);
+    EXPECT_EQ(adapter.Stats().ignoredEvents, 0U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 0U);
+}
+
+TEST(HyperliquidMatchingEngineAdapterTest, FullFillRemovesMappedRestingOrder) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    ExternalOrderEvent new_event =
+        MakeEvent(EventType::New, false, 99.00, 0.00002, 1, "open", "external-bid-1");
+    adapter.OnEvent(new_event);
+
+    ExternalOrderEvent fill_event =
+        MakeEvent(EventType::Fill, false, 99.00, 0.00002, 3, "filled", "external-bid-1");
+    fill_event.external_fill_size = 0.00002;
+    adapter.OnEvent(fill_event);
+
+    EXPECT_FALSE(engine.Book().GetBestBid().has_value());
+    EXPECT_EQ(adapter.Stats().externallyFilledOrders, 1U);
+    EXPECT_EQ(adapter.Stats().ignoredEvents, 0U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 0U);
+}
+
+TEST(HyperliquidMatchingEngineAdapterTest, FillWithoutExplicitQuantityIsIgnored) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    ExternalOrderEvent new_event =
+        MakeEvent(EventType::New, true, 100.00, 0.00002, 1, "open", "external-ask-1");
+    adapter.OnEvent(new_event);
+
+    adapter.OnEvent(
+        MakeEvent(EventType::Fill, true, 100.00, 0.00002, 3, "filled", "external-ask-1"));
+
+    const auto best_ask = engine.Book().GetBestAsk();
+    ASSERT_TRUE(best_ask.has_value());
+    EXPECT_DOUBLE_EQ(*best_ask, 100.00);
+    EXPECT_EQ(adapter.Stats().externallyFilledOrders, 0U);
+    EXPECT_EQ(adapter.Stats().ignoredEvents, 1U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 1U);
+}
+
+TEST(HyperliquidMatchingEngineAdapterTest, RepeatedFullFillIsSafeNoOp) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    ExternalOrderEvent new_event =
+        MakeEvent(EventType::New, true, 100.00, 0.00002, 1, "open", "external-ask-1");
+    adapter.OnEvent(new_event);
+
+    ExternalOrderEvent fill_event =
+        MakeEvent(EventType::Fill, true, 100.00, 0.00002, 3, "filled", "external-ask-1");
+    fill_event.external_fill_size = 0.00002;
+    adapter.OnEvent(fill_event);
+    adapter.OnEvent(fill_event);
+
+    EXPECT_FALSE(engine.Book().GetBestAsk().has_value());
+    EXPECT_EQ(adapter.Stats().externallyFilledOrders, 1U);
+    EXPECT_EQ(adapter.Stats().ignoredEvents, 1U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 1U);
+}
 TEST(HyperliquidMatchingEngineAdapterTest, RejectEventDoesNotTouchBook) {
     MatchingEngine engine;
     HyperliquidMatchingEngineAdapter adapter(engine);

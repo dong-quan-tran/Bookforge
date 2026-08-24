@@ -29,6 +29,7 @@ struct ReplayStats {
 
     std::size_t submittedOrders{0};
     std::size_t canceledOrders{0};
+    std::size_t externallyFilledOrders{0};
     std::size_t ignoredEvents{0};
     std::size_t generatedTrades{0};
 
@@ -186,7 +187,63 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         ++stats_.canceledOrders;
     }
 
-    void HandleFill(const ExternalOrderEvent &) {
+    void HandleFill(const ExternalOrderEvent &event) {
+        if (!event.external_fill_size.has_value()) {
+            MarkUnsupported();
+            return;
+        }
+
+        const std::uint32_t fill_quantity = ToInternalQuantity(*event.external_fill_size);
+        if (fill_quantity == 0) {
+            MarkUnsupported();
+            return;
+        }
+
+        const auto mapping_it = FindMappedInternalOrder(event);
+        if (mapping_it == external_to_internal_order_ids_.end()) {
+            MarkUnsupported();
+            return;
+        }
+
+        const std::uint64_t internal_order_id = mapping_it->second;
+        const std::optional<Order> resting_order = engine_.Book().FindOrder(internal_order_id);
+
+        if (!resting_order.has_value()) {
+            external_to_internal_order_ids_.erase(mapping_it);
+            MarkUnsupported();
+            return;
+        }
+
+        if (fill_quantity >= resting_order->quantity) {
+            if (!engine_.CancelOrder(internal_order_id)) {
+                MarkUnsupported();
+                return;
+            }
+
+            external_to_internal_order_ids_.erase(mapping_it);
+            ++stats_.externallyFilledOrders;
+            return;
+        }
+
+        const std::uint32_t remaining_quantity = resting_order->quantity - fill_quantity;
+        if (!engine_.Book().ReduceOrderQuantity(internal_order_id, remaining_quantity)) {
+            MarkUnsupported();
+            return;
+        }
+
+        ++stats_.externallyFilledOrders;
+    }
+
+    std::unordered_map<std::string, std::uint64_t>::iterator
+    FindMappedInternalOrder(const ExternalOrderEvent &event) {
+        if (event.external_order_id.empty()) {
+            return external_to_internal_order_ids_.end();
+        }
+
+        return external_to_internal_order_ids_.find(event.external_order_id);
+    }
+
+    void MarkUnsupported() {
         ++stats_.ignoredEvents;
         ++metrics_.unsupported;
     }
