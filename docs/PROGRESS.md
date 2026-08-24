@@ -1659,3 +1659,149 @@ Bookforge can now:
 - 16 commits were pushed to `main`.
 - The latest commit is `Add multi-symbol replay fixture`.
 - The repository history now includes the complete replay-pacing and multi-symbol replay milestone sequence.
+
+Progress Log — August 24, 2026
+
+## Summary
+
+Today focused on making Hyperliquid-style replay lifecycle-aware while preserving strict data-integrity boundaries.
+
+Bookforge now supports explicit external order identity, ID-linked cancellation, and explicit-quantity fill handling for datasets that provide the necessary fields. The implementation intentionally avoids inferring order identity or fill quantity from ambiguous fields in the legacy BTC sample.
+
+## Completed
+
+### Symbol-aware injected orders
+
+- Added `symbol` to `InjectedOrder`.
+- Updated `MultiSymbolReplayAdapter` to route injected orders to their selected isolated symbol book.
+- Preserved fallback behavior:
+  - A symbol-less injected order routes to the configured fallback symbol when one exists.
+  - A symbol-less injected order is marked unsupported when no fallback is configured.
+- Added tests verifying:
+  - Injected BTC orders cannot trade against ETH liquidity.
+  - Symbol-less injected orders use the fallback symbol.
+  - A new symbol can receive an injected order and create its own isolated book.
+  - Empty-symbol injected orders without a fallback are safe unsupported no-ops.
+
+### External order-ID ingestion
+
+- Added `external_order_id` to `ExternalOrderEvent`.
+- Extended Hyperliquid CSV ingestion to preserve optional external IDs from:
+  - `order_id`
+  - `orderId`
+  - `oid`
+- Added precedence rules: `order_id` takes priority over `orderId`, which takes priority over `oid`.
+- Preserved compatibility with legacy/headerless data and the checked-in BTC status sample:
+  - Events without an explicit ID field retain an empty `external_order_id`.
+- Added an ID-bearing lifecycle fixture for replay regression work.
+
+### External cancel linkage
+
+- Added an adapter-level mapping from external order IDs to synthetic internal order IDs.
+- A `New` event registers an external ID only after its order successfully rests in the internal book.
+- A matching `Cancel` event removes that mapped resting order.
+- Unknown IDs, empty IDs, repeated cancels, and orders that fully crossed at submission are safe no-ops.
+- The implementation does not infer identity from price, size, side, timestamp, or symbol.
+- Added lifecycle replay coverage confirming cancellation affects only the correctly mapped resting order.
+
+### Explicit external fill linkage
+
+- Added optional `external_fill_size` to `ExternalOrderEvent`.
+- Extended CSV parsing to recognize executed-quantity columns:
+  - `fill_size`
+  - `fillSize`
+  - `fillSz`
+- Added `OrderBook::FindOrder(order_id)` so the adapter can inspect the current remaining quantity of a mapped resting order.
+- Fill handling now requires:
+  - An explicit external order ID.
+  - A currently mapped resting internal order.
+  - A positive explicit fill quantity.
+- Partial fills reduce the mapped order’s remaining quantity.
+- Full fills remove the mapped internal order and delete its external-ID mapping.
+- Oversized fill quantities are treated as full fills.
+- Missing fill quantity, unknown IDs, repeated fills after full removal, and ID-less fill events remain safe no-ops.
+- The generic `sz` field is not used as fill quantity because its lifecycle semantics are ambiguous.
+
+### Fixture and regression coverage
+
+- Expanded the lifecycle fixture to include:
+  - BTC resting ask followed by cancellation.
+  - ETH resting bid followed by partial fill.
+  - ETH full fill removing the remaining quantity.
+  - Unknown cancellation handling.
+- Added unit coverage for:
+  - Fill quantity parsing.
+  - Fill-size aliases.
+  - Missing fill-size behavior.
+  - Partial fill reduction.
+  - Full fill removal.
+  - Repeated full fill safety.
+  - Missing explicit fill quantity.
+- Added reader → adapter → engine lifecycle regression coverage.
+
+### Documentation
+
+- Updated `README.md` with:
+  - Optional external ID columns.
+  - ID-linked cancellation behavior.
+  - Explicit fill-quantity column requirements.
+  - The deliberate policy of not inferring identity or fill quantity from ambiguous fields.
+- Updated `docs/BLUEPRINT.md` to record:
+  - Multi-symbol replay completion.
+  - Optional external ID ingestion.
+  - External cancel linkage completion.
+  - External fill linkage completion when explicit IDs and fill quantities are present.
+
+## Replay lifecycle contract
+
+For lifecycle-aware CSV datasets, Bookforge currently supports:
+
+```text
+New:
+  Requires normal order fields.
+  Optionally registers order_id/orderId/oid after the order rests.
+
+Cancel:
+  Requires an explicit external order ID.
+  Cancels only the matching mapped resting order.
+
+Fill:
+  Requires an explicit external order ID and fill_size/fillSize/fillSz.
+  Reduces or removes only the matching mapped resting order.
+```
+
+The checked-in BTC sample remains compatible but cannot drive linked lifecycle updates because it contains neither explicit order IDs nor explicit fill quantities.
+
+## Validation
+
+Run the focused suite:
+
+```powershell
+ctest --test-dir build -C Debug --output-on-failure -R "HyperliquidCsvReaderTest|HyperliquidMatchingEngineAdapterTest|HyperliquidLifecycleReplayTest"
+```
+
+Run the full local validation:
+
+```powershell
+.\scripts\dev-check.ps1
+git diff --check
+```
+
+## Remaining replay work
+
+- Define and implement explicit replace/amend event support for ID-bearing datasets.
+- Decide amend semantics:
+  - Same-price quantity reduction can preserve queue priority.
+  - Price changes and quantity increases should lose queue priority.
+- Add event timestamp normalization so matching-engine events can support meaningful time-to-fill metrics.
+- Add lifecycle-aware multi-symbol integration coverage through the CLI fixture.
+- Add a deterministic synthetic ID-bearing generator for larger lifecycle and throughput fixtures.
+- Consider source-specific schema adapters if richer Hyperliquid exports become available.
+
+## Suggested next commit
+
+```text
+Support replay order amendments by external ID
+```
+
+The next lifecycle feature should parse an explicit amendment event and use the existing `OrderBook::ReplaceOrder(...)` path. It should preserve priority only for same-price quantity reductions and requeue orders for price changes or quantity increases.
