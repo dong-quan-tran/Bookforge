@@ -1,5 +1,4 @@
-﻿@'
-# Bookforge
+﻿# Bookforge
 
 Bookforge is a hybrid **C++ + Python** market-microstructure project for studying how a modern limit-order book behaves under replayed market-event flow.
 
@@ -636,4 +635,3 @@ Bookforge is developed and maintained by:
 - **Dong Quan Tran (Johnny)**
 - Email: [dxt9721@mavs.uta.edu](mailto:dxt9721@mavs.uta.edu) / [dongquan.tran.johnny@gmail.com](mailto:dongquan.tran.johnny@gmail.com)
 - GitHub: [dong-quan-tran](https://github.com/dong-quan-tran)
-'@ | Set-Content -LiteralPath "README.md" -Encoding utf8
