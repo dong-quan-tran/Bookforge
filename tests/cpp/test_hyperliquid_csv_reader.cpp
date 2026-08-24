@@ -41,6 +41,7 @@ TEST(HyperliquidCsvReaderTest, ReadsValidRows) {
     ASSERT_EQ(events.size(), 2U);
 
     EXPECT_TRUE(events[0].symbol.empty());
+    EXPECT_TRUE(events[0].external_order_id.empty());
     EXPECT_DOUBLE_EQ(events[0].price, 89691.0);
     EXPECT_DOUBLE_EQ(events[0].size, 0.01672);
     EXPECT_TRUE(events[0].isAsk);
@@ -49,6 +50,7 @@ TEST(HyperliquidCsvReaderTest, ReadsValidRows) {
     EXPECT_EQ(events[0].eventType, EventType::Reject);
 
     EXPECT_TRUE(events[1].symbol.empty());
+    EXPECT_TRUE(events[1].external_order_id.empty());
     EXPECT_DOUBLE_EQ(events[1].price, 89690.0);
     EXPECT_DOUBLE_EQ(events[1].size, 0.02000);
     EXPECT_FALSE(events[1].isAsk);
@@ -68,12 +70,75 @@ TEST(HyperliquidCsvReaderTest, ReadsBomPrefixedHeader) {
 
     ASSERT_EQ(events.size(), 1U);
     EXPECT_EQ(events[0].symbol, "BTCUSDT.P");
+    EXPECT_TRUE(events[0].external_order_id.empty());
     EXPECT_DOUBLE_EQ(events[0].price, 89691.0);
     EXPECT_DOUBLE_EQ(events[0].size, 0.01672);
     EXPECT_TRUE(events[0].isAsk);
     EXPECT_EQ(events[0].statusId, 1);
     EXPECT_EQ(events[0].statusText, "open");
     EXPECT_EQ(events[0].eventType, EventType::New);
+}
+
+TEST(HyperliquidCsvReaderTest, ReadsOrderIdColumnWhenPresent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_order_id_test.csv",
+                     "ts,symbol,order_id,limitPx,sz,isAsk,statusId,status\n"
+                     "2025-12-15 11:39:39.722049503,BTCUSDT.P,btc-order-1,89691.0,0.01672,"
+                     "True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].symbol, "BTCUSDT.P");
+    EXPECT_EQ(events[0].external_order_id, "btc-order-1");
+    EXPECT_EQ(events[0].eventType, EventType::New);
+}
+
+TEST(HyperliquidCsvReaderTest, ReadsCamelCaseOrderIdColumnWhenPresent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_order_id_camel_case_test.csv",
+                     "ts,symbol,orderId,limitPx,sz,isAsk,statusId,status\n"
+                     "2025-12-15 11:39:39.722049503,ETHUSDT.P,eth-order-1,3000.0,0.02000,"
+                     "False,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].symbol, "ETHUSDT.P");
+    EXPECT_EQ(events[0].external_order_id, "eth-order-1");
+    EXPECT_EQ(events[0].eventType, EventType::New);
+}
+
+TEST(HyperliquidCsvReaderTest, ReadsOidColumnWhenPresent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_oid_test.csv",
+                     "ts,coin,oid,limitPx,sz,isAsk,statusId,status\n"
+                     "2025-12-15 11:39:39.722049503,SOL,sol-order-1,150.0,0.01672,True,1,"
+                     "open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].symbol, "SOL");
+    EXPECT_EQ(events[0].external_order_id, "sol-order-1");
+    EXPECT_EQ(events[0].eventType, EventType::New);
+}
+
+TEST(HyperliquidCsvReaderTest, PrefersSnakeCaseOrderIdWhenMultipleAliasesArePresent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_order_id_precedence_test.csv",
+                     "ts,order_id,orderId,oid,limitPx,sz,isAsk,statusId,status\n"
+                     "2025-12-15 11:39:39.722049503,snake-id,camel-id,short-id,89691.0,"
+                     "0.01672,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].external_order_id, "snake-id");
 }
 
 TEST(HyperliquidCsvReaderTest, ReadsSymbolColumnWhenPresent) {
@@ -89,6 +154,8 @@ TEST(HyperliquidCsvReaderTest, ReadsSymbolColumnWhenPresent) {
     ASSERT_EQ(events.size(), 2U);
     EXPECT_EQ(events[0].symbol, "BTC");
     EXPECT_EQ(events[1].symbol, "ETH");
+    EXPECT_TRUE(events[0].external_order_id.empty());
+    EXPECT_TRUE(events[1].external_order_id.empty());
     EXPECT_DOUBLE_EQ(events[0].price, 89691.0);
     EXPECT_DOUBLE_EQ(events[1].price, 3000.0);
 }
@@ -104,6 +171,7 @@ TEST(HyperliquidCsvReaderTest, ReadsCoinColumnAsSymbolWhenPresent) {
 
     ASSERT_EQ(events.size(), 1U);
     EXPECT_EQ(events[0].symbol, "SOL");
+    EXPECT_TRUE(events[0].external_order_id.empty());
     EXPECT_DOUBLE_EQ(events[0].price, 150.0);
 }
 

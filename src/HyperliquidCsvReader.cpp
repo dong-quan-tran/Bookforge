@@ -137,6 +137,27 @@ std::string ParseSymbol(const std::vector<std::string> &fields,
     return symbol;
 }
 
+std::string ParseExternalOrderId(const std::vector<std::string> &fields,
+                                 const std::unordered_map<std::string, std::size_t> &header_index) {
+    constexpr const char *kOrderIdColumn = "order_id";
+    constexpr const char *kOrderIdCamelCaseColumn = "orderId";
+    constexpr const char *kOidColumn = "oid";
+
+    if (HasHeaderField(header_index, kOrderIdColumn)) {
+        return GetOptionalField(fields, header_index, kOrderIdColumn);
+    }
+
+    if (HasHeaderField(header_index, kOrderIdCamelCaseColumn)) {
+        return GetOptionalField(fields, header_index, kOrderIdCamelCaseColumn);
+    }
+
+    if (HasHeaderField(header_index, kOidColumn)) {
+        return GetOptionalField(fields, header_index, kOidColumn);
+    }
+
+    return "";
+}
+
 } // namespace
 
 HyperliquidCsvReader::HyperliquidCsvReader(std::string path) : path_(std::move(path)) {}
@@ -192,11 +213,12 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
                 }
 
                 event.ts = parse_timestamp_stub(fields[0]);
+                event.symbol = "";
+                event.external_order_id = "";
                 event.price = std::stod(fields[1]);
                 event.size = std::stod(fields[2]);
                 event.isAsk = parse_bool(fields[3]);
                 event.statusId = std::stoi(fields[4]);
-                event.symbol = "";
 
                 if (fields.size() >= 6) {
                     event.statusText = fields[5];
@@ -208,6 +230,7 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
             } else {
                 event.ts = parse_timestamp_stub(GetRequiredField(fields, header_index, "ts"));
                 event.symbol = ParseSymbol(fields, header_index);
+                event.external_order_id = ParseExternalOrderId(fields, header_index);
                 event.price = std::stod(GetRequiredField(fields, header_index, "limitPx"));
                 event.size = std::stod(GetRequiredField(fields, header_index, "sz"));
                 event.isAsk = parse_bool(GetRequiredField(fields, header_index, "isAsk"));

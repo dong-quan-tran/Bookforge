@@ -34,6 +34,7 @@ This makes it useful both as:
 - Optional per-symbol replay filtering with deterministic sorted summaries
 - Event-time replay pacing with a configurable speed multiplier
 - Hyperliquid-style CSV ingestion path for replay experiments
+- Optional external order-ID preservation for lifecycle-aware replay datasets
 - Snapshot export and comparison for reproducibility and checkpoint validation
 - Feature export for microstructure research, including spread, mid-price, depth imbalance, and OFI
 - Strategy-experiment runner, injected-order support, passive/aggressive comparison, and CSV-result writer
@@ -286,9 +287,15 @@ Bookforge routes symbol-less rows to the fallback symbol `BTCUSDT.P`. The sample
 
 ### Optional external order IDs
 
-For lifecycle-aware replay datasets, the CSV reader preserves one optional external order-ID column. Supported names are `order_id`, `orderId`, and `oid`.
+For lifecycle-aware replay datasets, the CSV reader preserves an optional external order identifier when one of these header names is present:
 
-The checked-in BTC sample does not include an external ID field, so Bookforge cannot reliably apply source cancel/fill records to a specific resting internal order from that file. When an explicit ID is available, later replay work can safely link lifecycle events to the corresponding submitted order.
+```text
+order_id
+orderId
+oid
+```
+
+The checked-in BTC status sample has no external ID column, so its parsed events retain an empty external ID. Bookforge does not infer order identity from price, size, timestamp, or side. Stateful replay handling for external cancels and fills will only operate when a dataset provides an explicit order identifier.
 
 ### Replay Hyperliquid-style CSV data
 
