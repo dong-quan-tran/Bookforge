@@ -297,6 +297,8 @@ oid
 
 The checked-in BTC status sample has no external ID column, so its parsed events retain an empty external ID. Bookforge does not infer order identity from price, size, timestamp, or side. Stateful replay handling for external cancels and fills will only operate when a dataset provides an explicit order identifier.
 
+When a `New` event with an explicit external ID rests in the internal book, a later `Cancel` event with the same ID removes that resting order. Unknown IDs, repeated cancels, empty IDs, and orders that fully crossed at submission are safe no-ops. External fill lifecycle events are still recorded but remain unsupported until partial/full-fill linkage is implemented.
+
 ### Replay Hyperliquid-style CSV data
 
 #### Windows PowerShell
@@ -648,3 +650,4 @@ Bookforge is developed and maintained by:
 - **Dong Quan Tran (Johnny)**
 - Email: [dxt9721@mavs.uta.edu](mailto:dxt9721@mavs.uta.edu) / [dongquan.tran.johnny@gmail.com](mailto:dongquan.tran.johnny@gmail.com)
 - GitHub: [dong-quan-tran](https://github.com/dong-quan-tran)
+

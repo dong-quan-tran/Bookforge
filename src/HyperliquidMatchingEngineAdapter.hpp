@@ -1,9 +1,12 @@
-#pragma once
+﻿#pragma once
 
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "ExternalOrderEvent.hpp"
@@ -25,6 +28,7 @@ struct ReplayStats {
     std::size_t otherCount{0};
 
     std::size_t submittedOrders{0};
+    std::size_t canceledOrders{0};
     std::size_t ignoredEvents{0};
     std::size_t generatedTrades{0};
 
@@ -39,39 +43,39 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         MatchingEngine &engine, InjectedOrderFillHandler injected_order_fill_handler = {})
         : engine_(engine), injected_order_fill_handler_(std::move(injected_order_fill_handler)) {}
 
-    void OnEvent(const ExternalOrderEvent &ev) override {
+    void OnEvent(const ExternalOrderEvent &event) override {
         ++stats_.totalEvents;
 
-        switch (ev.eventType) {
+        switch (event.eventType) {
         case EventType::New:
             ++stats_.newCount;
             ++metrics_.newEvents;
-            SubmitExternalNewOrder(ev);
+            SubmitExternalNewOrder(event);
             break;
         case EventType::Cancel:
             ++stats_.cancelCount;
             ++metrics_.cancelEvents;
-            HandleCancel(ev);
+            HandleCancel(event);
             break;
         case EventType::Fill:
             ++stats_.fillCount;
             ++metrics_.fillEvents;
-            HandleFill(ev);
+            HandleFill(event);
             break;
         case EventType::Reject:
             ++stats_.rejectCount;
             ++metrics_.rejectEvents;
-            HandleReject(ev);
+            HandleReject(event);
             break;
         case EventType::Trigger:
             ++stats_.triggerCount;
             ++metrics_.triggerEvents;
-            HandleTrigger(ev);
+            HandleTrigger(event);
             break;
         case EventType::Other:
             ++stats_.otherCount;
             ++metrics_.otherEvents;
-            HandleOther(ev);
+            HandleOther(event);
             break;
         }
     }
@@ -86,7 +90,7 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
             return;
         }
 
-        for (const auto &trade : result.trades) {
+        for (const Trade &trade : result.trades) {
             injected_order_fill_handler_(order, trade);
         }
     }
@@ -104,14 +108,30 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     }
 
   private:
-    void SubmitExternalNewOrder(const ExternalOrderEvent &ev) {
-        const Side side = ev.isAsk ? Side::Sell : Side::Buy;
-        const std::uint32_t quantity = ToInternalQuantity(ev.size);
+    struct SubmittedOrder {
+        std::uint64_t internal_order_id{0};
+        MatchResult match_result;
+    };
 
-        (void)SubmitOrder(side, ev.price, quantity);
+    void SubmitExternalNewOrder(const ExternalOrderEvent &event) {
+        const Side side = event.isAsk ? Side::Sell : Side::Buy;
+        const std::uint32_t quantity = ToInternalQuantity(event.size);
+        const SubmittedOrder submitted_order = SubmitOrderWithId(side, event.price, quantity);
+
+        if (event.external_order_id.empty() || submitted_order.internal_order_id == 0 ||
+            submitted_order.match_result.remaining_quantity != 0) {
+            return;
+        }
+
+        external_to_internal_order_ids_[event.external_order_id] =
+            submitted_order.internal_order_id;
     }
 
     MatchResult SubmitOrder(Side side, double price, std::uint32_t quantity) {
+        return SubmitOrderWithId(side, price, quantity).match_result;
+    }
+
+    SubmittedOrder SubmitOrderWithId(Side side, double price, std::uint32_t quantity) {
         if (quantity == 0) {
             ++stats_.ignoredEvents;
             ++metrics_.ignored;
@@ -133,16 +153,37 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         ++metrics_.submitted;
         stats_.generatedTrades += result.trades.size();
 
-        for (const auto &trade : result.trades) {
+        for (const Trade &trade : result.trades) {
             trades_.push_back(trade);
         }
 
-        return result;
+        return SubmittedOrder{order.id, std::move(result)};
     }
 
-    void HandleCancel(const ExternalOrderEvent &) {
-        ++stats_.ignoredEvents;
-        ++metrics_.unsupported;
+    void HandleCancel(const ExternalOrderEvent &event) {
+        if (event.external_order_id.empty()) {
+            ++stats_.ignoredEvents;
+            ++metrics_.unsupported;
+            return;
+        }
+
+        const auto mapping_it = external_to_internal_order_ids_.find(event.external_order_id);
+        if (mapping_it == external_to_internal_order_ids_.end()) {
+            ++stats_.ignoredEvents;
+            ++metrics_.unsupported;
+            return;
+        }
+
+        const std::uint64_t internal_order_id = mapping_it->second;
+        external_to_internal_order_ids_.erase(mapping_it);
+
+        if (!engine_.CancelOrder(internal_order_id)) {
+            ++stats_.ignoredEvents;
+            ++metrics_.unsupported;
+            return;
+        }
+
+        ++stats_.canceledOrders;
     }
 
     void HandleFill(const ExternalOrderEvent &) {
@@ -173,14 +214,16 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
             return 0;
         }
 
-        const auto qty = static_cast<std::uint64_t>(scaled);
-        if (qty == 0) {
+        const auto quantity = static_cast<std::uint64_t>(scaled);
+        if (quantity == 0) {
             return 1;
         }
-        if (qty > static_cast<std::uint64_t>(std::numeric_limits<std::uint32_t>::max())) {
+
+        if (quantity > static_cast<std::uint64_t>(std::numeric_limits<std::uint32_t>::max())) {
             return std::numeric_limits<std::uint32_t>::max();
         }
-        return static_cast<std::uint32_t>(qty);
+
+        return static_cast<std::uint32_t>(quantity);
     }
 
   private:
@@ -189,6 +232,7 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     ReplayStats stats_{};
     AdapterMetrics metrics_{};
     std::vector<Trade> trades_{};
+    std::unordered_map<std::string, std::uint64_t> external_to_internal_order_ids_{};
 
     std::uint64_t nextSyntheticOrderId_{1};
     std::uint64_t nextSyntheticTimestamp_{1};

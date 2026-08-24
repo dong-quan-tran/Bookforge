@@ -106,6 +106,14 @@ bookforge_add_test(test_hyperliquid_csv_reader
   src/HyperliquidCsvReader.cpp
 )
 
+bookforge_add_test(test_hyperliquid_lifecycle_replay
+  tests/cpp/test_hyperliquid_lifecycle_replay.cpp
+  src/HyperliquidCsvReader.cpp
+)
+target_compile_definitions(test_hyperliquid_lifecycle_replay PRIVATE
+  BOOKFORGE_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+)
+
 bookforge_add_test(test_replay_runner
   tests/cpp/test_replay_runner.cpp
   src/replay/ReplayRunner.cpp
@@ -300,3 +308,4 @@ if(BOOKFORGE_ENABLE_BENCHMARKS)
     BOOKFORGE_BENCH_FIXTURE_FILE="${BOOKFORGE_BENCH_REPLAY_FIXTURE}"
   )
 endif()
+

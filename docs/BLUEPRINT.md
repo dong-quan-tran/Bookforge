@@ -1,4 +1,4 @@
-# Bookforge Blueprint
+﻿# Bookforge Blueprint
 
 ## Project summary
 
@@ -80,15 +80,15 @@ The original plan focused mainly on **LOBSTER-style replay**. The project now al
 
 This changes the design emphasis:
 
-- not just “load one dataset,”
-- but “define a reusable replay abstraction that can support multiple providers.”
+- not just â€œload one dataset,â€
+- but â€œdefine a reusable replay abstraction that can support multiple providers.â€
 
 Near-term design principle:
 - **raw dataset -> normalization -> external event model -> engine adapter -> internal engine**
 
 ---
 
-## Phase 1 — Core engine foundation
+## Phase 1 â€” Core engine foundation
 
 ### Goals
 Build a correct and testable C++ order book core.
@@ -116,7 +116,7 @@ Build a correct and testable C++ order book core.
 
 ---
 
-## Phase 2 — Replay foundation
+## Phase 2 â€” Replay foundation
 
 ### Goals
 Build a deterministic replay pipeline that can ingest historical market data and turn it into engine-facing events.
@@ -143,7 +143,7 @@ Build a deterministic replay pipeline that can ingest historical market data and
 - [x] Add parser tests for malformed / missing data
 - [x] Add fixture-based replay regression tests
 
-## Phase 3 — Engine adapter layer
+## Phase 3 â€” Engine adapter layer
 
 ### Goals
 Create a clean boundary between external market data and internal order-book actions.
@@ -171,7 +171,7 @@ Create a clean boundary between external market data and internal order-book act
 
 ---
 
-## Phase 4 — Matching engine integration
+## Phase 4 â€” Matching engine integration
 
 ### Goals
 Connect replayed events to a realistic matching workflow.
@@ -201,7 +201,7 @@ Connect replayed events to a realistic matching workflow.
 
 ---
 
-## Phase 5 — Snapshot and serialization layer
+## Phase 5 â€” Snapshot and serialization layer
 
 ### Goals
 Make book state exportable, comparable, and reproducible across replay checkpoints.
@@ -237,7 +237,7 @@ Make book state exportable, comparable, and reproducible across replay checkpoin
 
 ---
 
-## Phase 6 — Feature extraction
+## Phase 6 â€” Feature extraction
 
 ### Goals
 Turn replayed book state into usable microstructure features.
@@ -247,8 +247,8 @@ Turn replayed book state into usable microstructure features.
 - [x] Compute mid-price over time
 - [x] Compute top-level depth imbalance
 - [x] Compute multi-level depth imbalance
-- [x] Compute OFI for levels 1–5
-- [x] Add weighted OFI across levels 1–5
+- [x] Compute OFI for levels 1â€“5
+- [x] Add weighted OFI across levels 1â€“5
 - [x] Add rolling liquidity / volatility context features
 - [x] Define feature export format
 - [x] Add feature naming and schema conventions
@@ -260,7 +260,7 @@ Turn replayed book state into usable microstructure features.
 
 ---
 
-## Phase 7 — Python bridge and research layer
+## Phase 7 â€” Python bridge and research layer
 
 ### Goals
 Expose C++ outputs to Python and build the research workflow.
@@ -270,7 +270,7 @@ Expose C++ outputs to Python and build the research workflow.
 - [x] Build Python wrapper package
 - [x] Implement feature loading utilities
 - [x] Implement label generation for short-horizon prediction
-- [x] Implement Kyle’s Lambda estimation
+- [x] Implement Kyleâ€™s Lambda estimation
 - [x] Add feature export CLI
 - [x] Build first training dataset
 - [x] Train XGBoost baseline
@@ -285,7 +285,7 @@ Expose C++ outputs to Python and build the research workflow.
 
 ---
 
-## Phase 8 — API and dashboard
+## Phase 8 â€” API and dashboard
 
 ### Goals
 Create a lightweight surface for inspection and demos.
@@ -308,10 +308,10 @@ Create a lightweight surface for inspection and demos.
 
 ---
 
-## Phase 9 — Performance and engineering polish
+## Phase 9 â€” Performance and engineering polish
 
 ### Goals
-Raise the repo from “works” to a serious, maintainable project.
+Raise the repo from â€œworksâ€ to a serious, maintainable project.
 
 ### Tasks
 - [x] Reach 50+ Google Tests.
@@ -342,7 +342,7 @@ Raise the repo from “works” to a serious, maintainable project.
 
 ---
 
-## Phase 10 — Stretch goals
+## Phase 10 â€” Stretch goals
 
 These are optional but high-value if time allows.
 
@@ -361,7 +361,8 @@ These are optional but high-value if time allows.
 - [x] Add latency histograms
 - [x] Add multi-symbol support
 - [x] Preserve optional external order IDs during CSV ingestion
-- [ ] Link external cancel/fill lifecycle events to resting internal orders when an explicit external ID is available
+- [x] Link external cancel lifecycle events to resting internal orders when an explicit external ID is available
+- [ ] Link external fill lifecycle events to resting internal orders when an explicit external ID is available
 - [ ] Add binary historical data reader for higher throughput
 
 ### Product / presentation
@@ -414,7 +415,7 @@ Priority order for the next few steps:
 
 ## Definition of success
 
-Bookforge will feel “high level” when it can do the following:
+Bookforge will feel â€œhigh levelâ€ when it can do the following:
 
 - replay a historical sample deterministically,
 - map raw market data into a clean internal engine interface,
