@@ -52,7 +52,7 @@ The current replay benchmark uses a larger synthetic fixture so that measured th
 
 | Benchmark | Fixture | Build | Observed result |
 |---|---|---|---|
-| `benchmark_replay` | Large synthetic CSV fixture | Release | roughly 4.4M–4.7M events/sec on Windows |
+| `benchmark_replay` | Large synthetic CSV fixture | Release | roughly 4.4M-4.7M events/sec on Windows |
 
 These numbers should be treated as local baseline measurements, not as universal performance claims.
 

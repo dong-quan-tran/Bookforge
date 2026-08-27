@@ -1,4 +1,4 @@
-## Hyperliquid enriched CSV → ExternalOrderEvent mapping
+## Hyperliquid enriched CSV â†’ ExternalOrderEvent mapping
 
 This section documents how enriched Hyperliquid order-status CSV rows are mapped into the internal `ExternalOrderEvent` model and downstream replay components.
 
@@ -13,13 +13,13 @@ ts,limitPx,sz,isAsk,statusId,status,eventType
 
 Fields:
 
-- `ts` — wall-clock timestamp (nanosecond-resolution string)
-- `limitPx` — limit price
-- `sz` — order size (base asset units)
-- `isAsk` — side flag (True = sell, False = buy)
-- `statusId` — numeric status code
-- `status` — textual status description
-- `eventType` — higher-level event classification label used during enrichment
+- `ts` - wall-clock timestamp (nanosecond-resolution string)
+- `limitPx` - limit price
+- `sz` - order size (base asset units)
+- `isAsk` - side flag (True = sell, False = buy)
+- `statusId` - numeric status code
+- `status` - textual status description
+- `eventType` - higher-level event classification label used during enrichment
 
 ### ExternalOrderEvent
 
@@ -48,7 +48,7 @@ Mapping from CSV fields into `ExternalOrderEvent`:
 | `ts`      | string     | `ts`                      | Parsed into `std::chrono::nanoseconds` or stubbed 0    |
 | `limitPx` | string     | `price`                   | `std::stod(limitPx)`                                   |
 | `sz`      | string     | `size`                    | `std::stod(sz)`                                        |
-| `isAsk`   | string     | `isAsk`                   | `"True"/"False"/\"1\"/\"0\"` → `bool` via helper       |
+| `isAsk`   | string     | `isAsk`                   | `"True"/"False"/\"1\"/\"0\"` â†’ `bool` via helper       |
 | `statusId`| string/int | `statusId`                | `std::stoi(statusId)`                                  |
 | `status`  | string     | `statusText`             | Stored as-is; used for `EventType` classification      |
 | `eventType`| string    | (not stored directly)     | Used only during enrichment; `status` drives `EventType` |
@@ -136,7 +136,7 @@ This ensures:
 
 ### Invariants and assumptions
 
-- `isAsk == true` → sell-side event; `isAsk == false` → buy-side event.
+- `isAsk == true` â†’ sell-side event; `isAsk == false` â†’ buy-side event.
 - `limitPx` and `sz` are in exchange-native units; no normalization is performed at parse time.
 - `statusId` is preserved for debugging and potential future use but does not drive `EventType`.
 - There is no guaranteed one-to-one mapping between external order IDs and internal engine order IDs yet; cancel/fill modeling is intentionally conservative until that linkage is added.

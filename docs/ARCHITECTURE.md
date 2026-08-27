@@ -484,7 +484,7 @@ Current controls include:
 - `.gitattributes` handling for line-ending consistency
 - A PowerShell development helper that formats selected files, builds, and runs tests
 
-These controls support the broader goal of moving the repository from “works” to “serious project.”
+These controls support the broader goal of moving the repository from "works" to "serious project."
 
 ## Development workflow controls
 

@@ -1,4 +1,4 @@
-Progress — July 9, 2026
+Progress - July 9, 2026
 Set up the initial Bookforge project layout and docs blueprint for the C++ order book core and future microstructure features.
 
 Implemented the first version of OrderBook and PriceLevel (adds, cancels, executes top order, best bid/ask, mid-price, spread, depth queries).
@@ -99,11 +99,11 @@ Uses std::chrono::steady_clock to time repeated operations, which is recommended
 
 Benchmarked operations with iterations = 100000 on Windows Debug build:
 
-AddOrder: total_ns=111230700, avg_ns≈1112 ns/op.
+AddOrder: total_ns=111230700, avg_nsâ‰ˆ1112 ns/op.
 
-CancelOrder: total_ns=4831089700, avg_ns≈48310 ns/op.
+CancelOrder: total_ns=4831089700, avg_nsâ‰ˆ48310 ns/op.
 
-ExecuteTopOrder: total_ns=73795936200, avg_ns≈737959 ns/op.
+ExecuteTopOrder: total_ns=73795936200, avg_nsâ‰ˆ737959 ns/op.
 
 Wired the benchmark into CMake:
 
@@ -114,13 +114,13 @@ Linked against bookforge_core.
 Documentation
 Updated docs/ARCHITECTURE.md to capture:
 
-Current Week 1 scope and what’s implemented.
+Current Week 1 scope and what's implemented.
 
 Data structures (std::map per side, std::list per level, std::unordered_map index).
 
 Benchmark methodology (steady_clock, iterations, Debug build, operations measured).
 
-Baseline latency numbers from today’s benchmark run.
+Baseline latency numbers from today's benchmark run.
 
 Current status vs Week 1 blueprint
 Define Order struct: Done.
@@ -141,11 +141,11 @@ Add latency benchmark: Done (benchmark_order_book).
 
 Record results in docs/ARCHITECTURE.md: Draft done with current baseline.
 
-# Bookforge Progress Log — 2026-07-12
+# Bookforge Progress Log - 2026-07-12
 
 ## Summary
 
-Today’s work focused on expanding the matching engine, tightening order book semantics, and improving test reliability. The main outcomes were multi-level limit matching, maker-aware trade generation, replace/reduce order behavior, self-trade prevention with both `CancelNewest` and `CancelOldest`, and stronger test ergonomics through a shared order factory helper.
+Today's work focused on expanding the matching engine, tightening order book semantics, and improving test reliability. The main outcomes were multi-level limit matching, maker-aware trade generation, replace/reduce order behavior, self-trade prevention with both `CancelNewest` and `CancelOldest`, and stronger test ergonomics through a shared order factory helper.
 
 ## Completed work
 
@@ -178,15 +178,15 @@ Today’s work focused on expanding the matching engine, tightening order book s
 
 ## Commits completed today
 
-- `50f048f` — Add matching engine for limit orders
-- `00b79a9` — Add multi-level limit order matching
-- `7875f91` — Add order reduction and replace semantics
-- `31405d3` — Add maker-aware trade generation
-- `2625e2b` — Add self-trade prevention CancelNewest
-- `3a9ae00` — Update tests with CancelNewest
-- `de4c756` — Add MakeOrder helper
-- `36ce2e3` — Add CancelOldest
-- `e7b4d23` — Add tests for CancelOldest
+- `50f048f` - Add matching engine for limit orders
+- `00b79a9` - Add multi-level limit order matching
+- `7875f91` - Add order reduction and replace semantics
+- `31405d3` - Add maker-aware trade generation
+- `2625e2b` - Add self-trade prevention CancelNewest
+- `3a9ae00` - Update tests with CancelNewest
+- `de4c756` - Add MakeOrder helper
+- `36ce2e3` - Add CancelOldest
+- `e7b4d23` - Add tests for CancelOldest
 
 ## Validation
 
@@ -198,11 +198,11 @@ Today’s work focused on expanding the matching engine, tightening order book s
 
 This was a strong correctness-focused session. The matching engine now supports more realistic execution behavior, self-trade prevention covers two useful policies, and the test suite is in a much better position to support future refactors.
 
-# Bookforge Progress Log — 2026-07-13
+# Bookforge Progress Log - 2026-07-13
 
 ## Summary
 
-Today’s work focused on improving the order book benchmark file and getting it back into a clean, maintainable state before starting Week 2.
+Today's work focused on improving the order book benchmark file and getting it back into a clean, maintainable state before starting Week 2.
 
 ## Completed work
 
@@ -256,11 +256,11 @@ ts,limitPx,sz,isAsk,statusId,status,eventType
 - Define how `New`, `Cancel`, and `Fill` should map into internal engine actions.
 - Add replay-focused tests for parsing, event classification, and adapter behavior.
 
-## 2026-07-17 — Replay foundation and testing
+## 2026-07-17 - Replay foundation and testing
 
 ### Summary
 
-Today’s work pushed Bookforge’s replay layer from an early prototype into a **deterministic, test-backed subsystem**.
+Today's work pushed Bookforge's replay layer from an early prototype into a **deterministic, test-backed subsystem**.
 
 Main outcomes:
 - Closed out the Phase 1 testing checklist.
@@ -299,27 +299,27 @@ Main outcomes:
 
 ### Commits
 
-- `941aa4a` — Add Hyperliquid adapter for matching engine replay events
-- `2a9cdc7` — Wire Hyperliquid replay main into real matching engine adapter
-- `05e908b` — Add replay adapter integration tests for Hyperliquid events
-- `e1c7a0b` — Register Hyperliquid replay adapter tests in CMake
-- `0d28830` — Document order book invariants and ownership rules
-- `0493c6d` — Mark Phase 1 testing checklist complete
-- `8448044` — Add replay config and runner interfaces
-- `8215d4a` — Add malformed-row handling to Hyperliquid CSV reader
-- `07aee51` — Wire replay main to config and deterministic runner
-- `d7487a6` — Add parser tests for Hyperliquid CSV reader
-- `5a2c8ab` — Register replay runner and CSV reader tests in CMake
-- `ba8ab8a` — Update Phase 2 replay checklist
-- `e16280b` — Add bounded replay tests for deterministic runner
-- `7fea817` — Register replay regression
+- `941aa4a` - Add Hyperliquid adapter for matching engine replay events
+- `2a9cdc7` - Wire Hyperliquid replay main into real matching engine adapter
+- `05e908b` - Add replay adapter integration tests for Hyperliquid events
+- `e1c7a0b` - Register Hyperliquid replay adapter tests in CMake
+- `0d28830` - Document order book invariants and ownership rules
+- `0493c6d` - Mark Phase 1 testing checklist complete
+- `8448044` - Add replay config and runner interfaces
+- `8215d4a` - Add malformed-row handling to Hyperliquid CSV reader
+- `07aee51` - Wire replay main to config and deterministic runner
+- `d7487a6` - Add parser tests for Hyperliquid CSV reader
+- `5a2c8ab` - Register replay runner and CSV reader tests in CMake
+- `ba8ab8a` - Update Phase 2 replay checklist
+- `e16280b` - Add bounded replay tests for deterministic runner
+- `7fea817` - Register replay regression
 
 ### Phase status
 
-#### Phase 1 — C++ core
+#### Phase 1 - C++ core
 Phase 1 testing is now marked complete.
 
-#### Phase 2 — Replay foundation
+#### Phase 2 - Replay foundation
 Completed today:
 - Stable external event model
 - Replay interfaces in `src/replay/`
@@ -349,11 +349,11 @@ The replay path is now strong enough to support:
 - regression-friendly testing,
 - future expansion to additional historical data sources.
 
-# Progress Log — 2026-07-18
+# Progress Log - 2026-07-18
 
 ## Summary
 
-Today’s work moved Bookforge forward across three major areas:
+Today's work moved Bookforge forward across three major areas:
 
 - replay adapter abstraction and test coverage,
 - matching-engine replay integration and Hyperliquid regression stability,
@@ -416,7 +416,7 @@ By the end of the day, the replay path was cleaner, regression coverage was more
 - Added header validation and reconstruction of scalar fields plus top-N depth.
 
 #### Phase 5: add snapshot CSV round-trip tests
-- Added round-trip tests covering write → read → compare behavior.
+- Added round-trip tests covering write â†’ read â†’ compare behavior.
 - Strengthened reproducibility guarantees for exported snapshot state.
 
 ## Technical outcomes
@@ -478,11 +478,11 @@ The project ended the day with:
 ### Forward-looking work
 - Use the new replay and snapshot foundation to support future source ingestion and deeper replay analysis workflows.
 
-# Progress Log — 2026-07-19
+# Progress Log - 2026-07-19
 
 ## Overview
 
-Today’s work moved Bookforge from a replay-and-snapshot engine toward a research-ready pipeline. The main outcomes were:
+Today's work moved Bookforge from a replay-and-snapshot engine toward a research-ready pipeline. The main outcomes were:
 
 - Finished the remaining snapshot serialization work in Phase 5.
 - Completed Phase 6 feature extraction, including OFI, weighted OFI, rolling context features, and Python-side CSV validation.
@@ -495,24 +495,24 @@ The project now has a cleaner end-to-end path:
 ## Commits
 
 ### Phase 7
-- `72351eb` — Docs: update Phase 7 blueprint checklist
-- `99eda64` — Phase 7: add initial pybind11 binding module
+- `72351eb` - Docs: update Phase 7 blueprint checklist
+- `99eda64` - Phase 7: add initial pybind11 binding module
 
 ### Phase 6
-- `36ce93e` — Phase 6: mark feature export validation complete
-- `3019611` — Phase 6: add Python feature export validator
-- `510ce2a` — Phase 6: add rolling context feature tests
-- `19e6188` — Phase 6: add rolling liquidity and volatility context features
-- `1a449d4` — Phase 6: add weighted OFI tests
-- `3b9bfc0` — Phase 6: add weighted OFI feature
-- `e249663` — Phase 6: add OFI feature tests
-- `da57f8c` — Phase 6: add OFI feature builder
-- `e278522` — Phase 6: add feature extraction tests and schema notes
-- `2b15d77` — Phase 6: add base feature extraction from snapshots
+- `36ce93e` - Phase 6: mark feature export validation complete
+- `3019611` - Phase 6: add Python feature export validator
+- `510ce2a` - Phase 6: add rolling context feature tests
+- `19e6188` - Phase 6: add rolling liquidity and volatility context features
+- `1a449d4` - Phase 6: add weighted OFI tests
+- `3b9bfc0` - Phase 6: add weighted OFI feature
+- `e249663` - Phase 6: add OFI feature tests
+- `da57f8c` - Phase 6: add OFI feature builder
+- `e278522` - Phase 6: add feature extraction tests and schema notes
+- `2b15d77` - Phase 6: add base feature extraction from snapshots
 
 ### Phase 5
-- `66eaaed` — Phase 5: add binary snapshot round-trip tests
-- `e05d932` — Phase 5: add binary snapshot serialization support
+- `66eaaed` - Phase 5: add binary snapshot round-trip tests
+- `e05d932` - Phase 5: add binary snapshot serialization support
 
 ## Phase 5 Progress
 
@@ -631,11 +631,11 @@ Phase 7 has started successfully. The Python bridge is no longer just a plan; it
 ## Current Project State
 
 ### Completed or effectively completed
-- Phase 5 — Snapshot and serialization layer
-- Phase 6 — Feature extraction
+- Phase 5 - Snapshot and serialization layer
+- Phase 6 - Feature extraction
 
 ### Started
-- Phase 7 — Python bridge and research layer
+- Phase 7 - Python bridge and research layer
 
 ## Key accomplishments today
 
@@ -662,7 +662,7 @@ The next logical tasks for Phase 7 are:
 
 Today was a strong transition point for the project. Bookforge now has a clearer path from C++ market replay infrastructure into Python-based research and modeling, with most of the needed data plumbing already in place.
 
-# Bookforge Progress Log — 2026-07-20
+# Bookforge Progress Log - 2026-07-20
 
 ## Summary
 
@@ -696,7 +696,7 @@ The last unchecked Phase 7 item, pytest coverage for the Python wrappers, was ad
 
 A couple of tests had to be adjusted to match the actual behavior of the current code rather than an idealized future state. Specifically, one dataset-label test was relaxed because the current synthetic test setup can produce a single classification label after normalization, and one loader monotonicity test was updated after it became clear that the current `validate_feature_frame` behavior does not raise on the specific duplicate-index case originally assumed by the test.
 
-After those refinements, the wrapper test suite reached a passing state, which is enough to close the checklist item for Python wrapper coverage in the current phase. This does not mean the research layer is “finished,” but it does mean the wrapper boundary now has baseline regression protection and the Phase 7 testing goal can reasonably be marked complete.
+After those refinements, the wrapper test suite reached a passing state, which is enough to close the checklist item for Python wrapper coverage in the current phase. This does not mean the research layer is "finished," but it does mean the wrapper boundary now has baseline regression protection and the Phase 7 testing goal can reasonably be marked complete.
 
 ## Dependency review
 
@@ -710,7 +710,7 @@ The general README was found to be out of date because it still described severa
 
 The updated README also adds concrete command-line examples for feature export, holdout training, walk-forward evaluation, SHAP usage, and MLflow UI launch. That makes the project materially easier to run for a new reader and better aligns the README with the reproducible workflow that was actually tested today.
 
-## Suggested commits from today’s work
+## Suggested commits from today's work
 
 The work naturally grouped into a few focused commits:
 
@@ -727,7 +727,7 @@ This commit breakdown keeps infrastructure, ML workflow, testing, and documentat
 Phase 7 is now effectively wrapped up from an implementation perspective: the wrapper package is in place, the training pipeline works in holdout and walk-forward modes, SHAP and MLflow are integrated, and Python wrapper tests are passing. The most important next step is no longer plumbing; it is improving label construction and evaluation diagnostics so the baseline model results become analytically meaningful rather than merely operational.
 
 
-# Progress Log — 2026-07-21
+# Progress Log - 2026-07-21
 
 ## Summary
 
@@ -818,7 +818,7 @@ The local demo stack now works in a meaningful way:
 
 ## Phase impact
 
-### Phase 8 — API and dashboard
+### Phase 8 - API and dashboard
 The following items are now effectively complete:
 - Build FastAPI service
 - Add endpoint for replay summary
@@ -839,18 +839,18 @@ Still open:
 
 ## Notes and observations
 
-- The main frontend issue was no longer the port configuration; it was a mismatch between the dashboard’s expected schema and the actual JSON returned by the API.
+- The main frontend issue was no longer the port configuration; it was a mismatch between the dashboard's expected schema and the actual JSON returned by the API.
 - Early sampled replay rows contain many null values, so frontend filtering/mapping was necessary to make the charts useful.
 - Separating the dashboard into its own `dashboard/` app makes the project layout cleaner and more realistic for demo/deployment workflows.
 - The API/demo layer is now strong enough to show as part of the portfolio narrative, even though snapshot inspection and some polish items are still pending.
 
 ---
 
-# Progress Log — 2026-07-26
+# Progress Log - 2026-07-26
 
 ## Summary
 
-Today focused on moving the project into Phase 9 polish work: tightening the repo structure, adding CI, adding lint/format configuration, and cleaning up Python code around the new API and research stack. The main theme was shifting the repo from “functional” toward “maintainable and interview-ready.”
+Today focused on moving the project into Phase 9 polish work: tightening the repo structure, adding CI, adding lint/format configuration, and cleaning up Python code around the new API and research stack. The main theme was shifting the repo from "functional" toward "maintainable and interview-ready."
 
 ---
 
@@ -940,7 +940,7 @@ The repo is now in a better place technically:
 
 ## Phase impact
 
-### Phase 9 — Performance and engineering polish
+### Phase 9 - Performance and engineering polish
 Completed or advanced:
 - GitHub Actions CI
 - formatting / linting rules
@@ -975,7 +975,7 @@ The next best Phase 9 task is likely documentation polish, especially:
 - finishing `docs/INTERVIEW_PREP.md`,
 - and then returning to benchmarks and test-count growth.
 
-# Bookforge Progress Log — 2026-07-27
+# Bookforge Progress Log - 2026-07-27
 
 ## Overview
 Today's work focused on CI stabilization, benchmark setup, replay benchmark integration, and repository cleanup after a divergent-branch merge. The branch history for the day includes a README update, CI workflow refactors, formatting consistency fixes, a merge from `origin/main`, benchmark-related code changes, and a final formatting-only commit for CI compliance.
@@ -1080,7 +1080,7 @@ git log --oneline --graph --decorate -10
 - Re-run benchmarks and capture a more representative replay throughput baseline.
 - Verify the GitHub Actions run is fully green after the formatting commit.
 
-# Progress Log — July 28, 2026
+# Progress Log - July 28, 2026
 
 ## Summary
 
@@ -1127,18 +1127,18 @@ Today focused on Phase 9 polish for Bookforge: documentation cleanup, test expan
 
 Commits from July 28, 2026:
 
-- `4f970a2` — Polish architecture documentation
-- `08513c7` — Polish project README
-- `c519ecc` — Add API pagination and snapshot edge case tests
-- `7467b67` — Add dataset and loader boundary tests
-- `c9bdcb6` — Add replay runner and CSV reader edge case tests
-- `a016905` — Add order book and matching engine edge case tests
-- `6d2a8a8` — Update Phase 9 progress
-- `63da3f4` — Add architecture diagrams
-- `26facae` — Update interview prep material
-- `93f4c0f` — Update README benchmark and project overview
-- `26c0ffd` — Add large replay benchmark fixture
-- `9f13bfc` — Update project architecture
+- `4f970a2` - Polish architecture documentation
+- `08513c7` - Polish project README
+- `c519ecc` - Add API pagination and snapshot edge case tests
+- `7467b67` - Add dataset and loader boundary tests
+- `c9bdcb6` - Add replay runner and CSV reader edge case tests
+- `a016905` - Add order book and matching engine edge case tests
+- `6d2a8a8` - Update Phase 9 progress
+- `63da3f4` - Add architecture diagrams
+- `26facae` - Update interview prep material
+- `93f4c0f` - Update README benchmark and project overview
+- `26c0ffd` - Add large replay benchmark fixture
+- `9f13bfc` - Update project architecture
 
 ## Current state
 
@@ -1158,7 +1158,7 @@ Commits from July 28, 2026:
 
 # July 29, 2026 Progress Log
 
-Today’s work focused on pushing Bookforge’s replay tooling, documentation quality, and interview readiness forward in a coordinated way. The day started with simulation and replay improvements, moved through documentation and presentation work, and ended with cleanup, formatting, and blueprint updates.
+Today's work focused on pushing Bookforge's replay tooling, documentation quality, and interview readiness forward in a coordinated way. The day started with simulation and replay improvements, moved through documentation and presentation work, and ended with cleanup, formatting, and blueprint updates.
 
 ## Replay and simulation work
 
@@ -1168,25 +1168,25 @@ A synthetic market event generator was also added to produce replay-compatible C
 
 ## Documentation updates
 
-Several commits improved the project’s documentation layer so the repository explains itself more clearly to recruiters, interviewers, and collaborators. Architecture decision records were added, benchmark documentation was written, and the README was updated to describe the replay fixture generator and how it fits into the workflow.
+Several commits improved the project's documentation layer so the repository explains itself more clearly to recruiters, interviewers, and collaborators. Architecture decision records were added, benchmark documentation was written, and the README was updated to describe the replay fixture generator and how it fits into the workflow.
 
 The architecture and interview-prep documents were then expanded in more depth. `INTERVIEW_PREP.md` now gives clearer answers on system design choices, market microstructure concepts, benchmark framing, trade-offs, and a tighter one-minute project pitch, while `ARCHITECTURE.md` now captures diagrams, invariants, replay flow, ownership rules, benchmarking intent, and Python binding boundaries.
 
 ## Demo and presentation work
 
-The repo also gained a polished interview demo scenario, which strengthens the project’s presentation value beyond raw implementation. That matters because Bookforge is no longer just a matching-engine codebase; it now has a clearer story for showing deterministic replay, benchmarkability, and research-oriented outputs in a way that is easier to present live.
+The repo also gained a polished interview demo scenario, which strengthens the project's presentation value beyond raw implementation. That matters because Bookforge is no longer just a matching-engine codebase; it now has a clearer story for showing deterministic replay, benchmarkability, and research-oriented outputs in a way that is easier to present live.
 
-The benchmark and architecture additions also improved how the project can be discussed in interviews. Instead of describing the repo only as “a C++ order book,” the material now supports a fuller explanation of correctness-first design, replayability, extensibility, and where future optimizations would fit.
+The benchmark and architecture additions also improved how the project can be discussed in interviews. Instead of describing the repo only as "a C++ order book," the material now supports a fuller explanation of correctness-first design, replayability, extensibility, and where future optimizations would fit.
 
 ## Quality and maintenance
 
-A meaningful part of today’s work was repo hygiene. Python tests were formatted and Ruff violations were fixed, replay and test C++ sources were formatted with `clang-format`, and `.gitignore` was updated so build and test artifacts stay out of version control.
+A meaningful part of today's work was repo hygiene. Python tests were formatted and Ruff violations were fixed, replay and test C++ sources were formatted with `clang-format`, and `.gitignore` was updated so build and test artifacts stay out of version control.
 
 Those cleanup commits are important because they reduce noise in future diffs and make the codebase feel more deliberate. Combined with the replay refactor, they also help keep CI and local development aligned instead of letting supporting infrastructure drift.
 
 ## Blueprint status changes
 
-The Phase 10 stretch-goal checklist was updated to reflect what is now actually complete. In particular, user-injected orders during historical replay were marked done, and the current-status notes now explicitly mention replay-side scheduling abstractions, injected-order coverage, and the replay adapter’s expanded interface.
+The Phase 10 stretch-goal checklist was updated to reflect what is now actually complete. In particular, user-injected orders during historical replay were marked done, and the current-status notes now explicitly mention replay-side scheduling abstractions, injected-order coverage, and the replay adapter's expanded interface.
 
 That update also clarified what remains unfinished. Strategy comparison under replay and queue-position-aware experiments are still open, which gives the next round of work a cleaner handoff.
 
@@ -1208,8 +1208,8 @@ That update also clarified what remains unfinished. Strategy comparison under re
 - Update Phase 10 stretch goals checklist
 
 
-July 30, 2026 — Progress Log
-Today’s work focused on making the repository easier to work in and advancing the Phase 10 research scaffold.
+July 30, 2026 - Progress Log
+Today's work focused on making the repository easier to work in and advancing the Phase 10 research scaffold.
 
 Workflow and repo hygiene
 Diagnosed repeated CI lint failures caused by formatting and line-ending drift.
@@ -1243,9 +1243,9 @@ Verified the full C++ test suite still passes after the new experiment-related c
 Outcome
 The repo now has a cleaner formatting workflow, less noisy Windows line-ending behavior, and a stronger foundation for the next Phase 10 task: turning the strategy experiment runner into a real replay-backed metric generator.
 
-# August 5, 2026 — Progress Log
+# August 5, 2026 - Progress Log
 
-Today’s work focused on tightening the development workflow around formatting and tests, and wiring the strategy experiment harness end-to-end for Phase 10.
+Today's work focused on tightening the development workflow around formatting and tests, and wiring the strategy experiment harness end-to-end for Phase 10.
 
 ## Git hooks and formatting workflow
 
@@ -1255,7 +1255,7 @@ Today’s work focused on tightening the development workflow around formatting 
 - Updated `scripts/dev-check.ps1` to format all tracked C++ files with `clang-format -style=file`, then build Release/Debug and run the full C++ test suite.
 - Verified that the hooks work on Windows by calling `powershell.exe` from the hook wrapper instead of `pwsh`, avoiding interpreter path issues.
 
-This setup makes “edit → auto-format → commit → build/test → push” the default flow and reduces repeated lint failures on GitHub.
+This setup makes "edit â†’ auto-format â†’ commit â†’ build/test â†’ push" the default flow and reduces repeated lint failures on GitHub.
 
 ## Strategy experiment adapter and runner
 
@@ -1309,7 +1309,7 @@ This gives a basic command-line interface around the experiment harness, ready t
 - Updated `docs/BLUEPRINT.md` to reflect that:
   - the synthetic event generator, injected order support, replay adapter, and experiment harness are now wired end-to-end,
   - the strategy experiment adapter, runner, and CLI provide a single-trial replay experiment entrypoint.
-- Left “Compare passive vs aggressive strategy behavior under replay” and queue-position-aware experiments as open items, to be tackled after the CLI starts emitting real metrics and experiments are run over multiple trials.
+- Left "Compare passive vs aggressive strategy behavior under replay" and queue-position-aware experiments as open items, to be tackled after the CLI starts emitting real metrics and experiments are run over multiple trials.
 
 ## Outcome
 
@@ -1317,7 +1317,7 @@ By the end of the day:
 
 - The repository has a clearer, automated formatting and test workflow via pre-commit and pre-push hooks.
 - The strategy experiment harness (adapter + runner + CLI) is structurally complete and integrated into both executables and tests.
-- Phase 10’s current status now explicitly recognizes the experiment plumbing as in place, setting up the next round of work: actually running passive vs aggressive experiments under replay and analyzing their behavior.
+- Phase 10's current status now explicitly recognizes the experiment plumbing as in place, setting up the next round of work: actually running passive vs aggressive experiments under replay and analyzing their behavior.
 
 Progress log: 2026-08-06
 
@@ -1411,7 +1411,7 @@ Ensured:
 
 StrategyExperimentAdapter initializes all these fields and provides a Result() method.
 
-StrategyExperimentRunner uses the adapter in a clean, non-duplicated way, with a stubbed RunOnce that’s ready for more complex replay integration.
+StrategyExperimentRunner uses the adapter in a clean, non-duplicated way, with a stubbed RunOnce that's ready for more complex replay integration.
 
 7) CI / dev-check
 Ran .\scripts\dev-check.ps1 multiple times:
@@ -1427,17 +1427,17 @@ Existing order book, matching engine, replay, snapshot, and feature tests still 
 New strategy experiment CSV writer tests pass after format and duplication fixes.
 
 Progress log: 
-## Phase 10 — Passive vs aggressive replay comparison
+## Phase 10 - Passive vs aggressive replay comparison
 
 Completed the replay strategy-comparison implementation in four focused commits.
 
 1. **Connected injected-order fills to experiment results**
    - Routed fills produced by an injected experiment order from the matching engine back into `StrategyExperimentAdapter::OnFill`.
-   - Ensured only the experiment’s own injected order updates its result.
+   - Ensured only the experiment's own injected order updates its result.
    - Added coverage for no fills, partial fills, multiple fills with weighted average execution price, and fill-quantity clamping.
 
 2. **Captured real decision-time market state**
-   - Replaced the temporary “first replay event” decision-metrics placeholder.
+   - Replaced the temporary "first replay event" decision-metrics placeholder.
    - Captured top-of-book state immediately before the experiment order is submitted.
    - `BeforeEvent` experiments now observe the book before the configured replay event; `AfterEvent` experiments observe the book after it.
    - Recorded best bid, best ask, mid-price, and spread when a two-sided market is available.
@@ -1460,7 +1460,7 @@ Validation:
 - No compiler warnings were reported.
 - Changes were pushed to GitHub after local validation.
 
-##Progress log: August 19, 2026 — Deterministic replay pacing
+##Progress log: August 19, 2026 - Deterministic replay pacing
 
 Worked on the Phase 10 deterministic replay pacing task in three small commits.
 
@@ -1489,7 +1489,7 @@ Validation:
 - No compiler warnings were reported.
 - Committed each completed step separately.
 
-##Progress log: August 21, 2026 — Replay latency histograms
+##Progress log: August 21, 2026 - Replay latency histograms
 
 Completed the Phase 10 replay latency-histogram work in three focused commits.
 
@@ -1516,11 +1516,11 @@ Validation:
 - Focused histogram, reporter, and replay-pacing tests passed.
 - No compiler warnings were reported.
 
-#Progress Log — August 21, 2026
+#Progress Log - August 21, 2026
 
 ## Summary
 
-Today focused on making Bookforge’s replay and execution-analysis workflow more observable, multi-symbol-safe, and reproducible.
+Today focused on making Bookforge's replay and execution-analysis workflow more observable, multi-symbol-safe, and reproducible.
 
 The replay system now supports deterministic pacing diagnostics, symbol-aware event parsing, isolated books per instrument, replay CLI filtering, symbol-scoped strategy experiments, and a small checked-in multi-symbol fixture for repeatable demos and regression tests.
 
@@ -1660,7 +1660,7 @@ Bookforge can now:
 - The latest commit is `Add multi-symbol replay fixture`.
 - The repository history now includes the complete replay-pacing and multi-symbol replay milestone sequence.
 
-Progress Log — August 24, 2026
+Progress Log - August 24, 2026
 
 ## Summary
 
@@ -1716,7 +1716,7 @@ Bookforge now supports explicit external order identity, ID-linked cancellation,
   - An explicit external order ID.
   - A currently mapped resting internal order.
   - A positive explicit fill quantity.
-- Partial fills reduce the mapped order’s remaining quantity.
+- Partial fills reduce the mapped order's remaining quantity.
 - Full fills remove the mapped internal order and delete its external-ID mapping.
 - Oversized fill quantities are treated as full fills.
 - Missing fill quantity, unknown IDs, repeated fills after full removal, and ID-less fill events remain safe no-ops.
@@ -1737,7 +1737,7 @@ Bookforge now supports explicit external order identity, ID-linked cancellation,
   - Full fill removal.
   - Repeated full fill safety.
   - Missing explicit fill quantity.
-- Added reader → adapter → engine lifecycle regression coverage.
+- Added reader â†’ adapter â†’ engine lifecycle regression coverage.
 
 ### Documentation
 
@@ -1806,7 +1806,7 @@ Support replay order amendments by external ID
 
 The next lifecycle feature should parse an explicit amendment event and use the existing `OrderBook::ReplaceOrder(...)` path. It should preserve priority only for same-price quantity reductions and requeue orders for price changes or quantity increases.
 
-## August 26, 2026 — Replay amendments
+## August 26, 2026 - Replay amendments
 
 - Added explicit `Replace` event support for ID-bearing replay datasets.
 - Recognized `replaced`, `replace`, `amended`, `amend`, and status ID `6`.

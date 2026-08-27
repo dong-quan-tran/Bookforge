@@ -1,4 +1,4 @@
-# Interview Prep — Bookforge
+# Interview Prep - Bookforge
 
 ## Project overview
 
