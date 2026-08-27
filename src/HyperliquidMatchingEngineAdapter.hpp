@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -23,6 +24,7 @@ struct ReplayStats {
     std::size_t newCount{0};
     std::size_t cancelCount{0};
     std::size_t fillCount{0};
+    std::size_t replaceCount{0};
     std::size_t rejectCount{0};
     std::size_t triggerCount{0};
     std::size_t otherCount{0};
@@ -30,6 +32,7 @@ struct ReplayStats {
     std::size_t submittedOrders{0};
     std::size_t canceledOrders{0};
     std::size_t externallyFilledOrders{0};
+    std::size_t replacedOrders{0};
     std::size_t ignoredEvents{0};
     std::size_t generatedTrades{0};
 
@@ -62,6 +65,10 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
             ++stats_.fillCount;
             ++metrics_.fillEvents;
             HandleFill(event);
+            break;
+        case EventType::Replace:
+            ++stats_.replaceCount;
+            HandleReplace(event);
             break;
         case EventType::Reject:
             ++stats_.rejectCount;
@@ -162,16 +169,9 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     }
 
     void HandleCancel(const ExternalOrderEvent &event) {
-        if (event.external_order_id.empty()) {
-            ++stats_.ignoredEvents;
-            ++metrics_.unsupported;
-            return;
-        }
-
-        const auto mapping_it = external_to_internal_order_ids_.find(event.external_order_id);
+        const auto mapping_it = FindMappedInternalOrder(event);
         if (mapping_it == external_to_internal_order_ids_.end()) {
-            ++stats_.ignoredEvents;
-            ++metrics_.unsupported;
+            MarkUnsupported();
             return;
         }
 
@@ -179,8 +179,7 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         external_to_internal_order_ids_.erase(mapping_it);
 
         if (!engine_.CancelOrder(internal_order_id)) {
-            ++stats_.ignoredEvents;
-            ++metrics_.unsupported;
+            MarkUnsupported();
             return;
         }
 
@@ -232,6 +231,57 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         }
 
         ++stats_.externallyFilledOrders;
+    }
+
+    void HandleReplace(const ExternalOrderEvent &event) {
+        const std::uint32_t replacement_quantity = ToInternalQuantity(event.size);
+        if (replacement_quantity == 0) {
+            MarkUnsupported();
+            return;
+        }
+
+        const auto mapping_it = FindMappedInternalOrder(event);
+        if (mapping_it == external_to_internal_order_ids_.end()) {
+            MarkUnsupported();
+            return;
+        }
+
+        const std::uint64_t internal_order_id = mapping_it->second;
+        const std::optional<Order> resting_order = engine_.Book().FindOrder(internal_order_id);
+
+        if (!resting_order.has_value()) {
+            external_to_internal_order_ids_.erase(mapping_it);
+            MarkUnsupported();
+            return;
+        }
+
+        if (event.isAsk != (resting_order->side == Side::Sell)) {
+            MarkUnsupported();
+            return;
+        }
+
+        if (event.price == resting_order->price &&
+            replacement_quantity == resting_order->quantity) {
+            return;
+        }
+
+        if (event.price == resting_order->price && replacement_quantity < resting_order->quantity) {
+            if (!engine_.Book().ReduceOrderQuantity(internal_order_id, replacement_quantity)) {
+                MarkUnsupported();
+                return;
+            }
+
+            ++stats_.replacedOrders;
+            return;
+        }
+
+        if (!engine_.Book().ReplaceOrder(internal_order_id, event.price, replacement_quantity,
+                                         nextSyntheticTimestamp_++)) {
+            MarkUnsupported();
+            return;
+        }
+
+        ++stats_.replacedOrders;
     }
 
     std::unordered_map<std::string, std::uint64_t>::iterator

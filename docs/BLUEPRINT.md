@@ -363,6 +363,9 @@ These are optional but high-value if time allows.
 - [x] Preserve optional external order IDs during CSV ingestion
 - [x] Stateful external fill linkage reduces or removes mapped resting orders when an explicit external ID and fill quantity are available.
 - [ ] Add binary historical data reader for higher throughput
+- [x] Support replay order amendments by explicit external ID
+- [x] Preserve queue priority for same-price quantity reductions
+- [x] Requeue orders after replayed price changes or quantity increases
 
 ### Product / presentation
 
@@ -398,6 +401,8 @@ These are optional but high-value if time allows.
 - [x] CSV ingestion tolerates a UTF-8 BOM before the header.
 - [x] Optional external order IDs are preserved when present as `order_id`, `orderId`, or `oid`.
 - [ ] Stateful external cancel/fill linkage remains pending; it will only operate on explicit external IDs and will not infer identity from price, size, or timestamp.
+- [x] Stateful replay lifecycle supports explicit-ID New, Cancel, Fill, and Replace events.
+- [x] Same-price quantity reductions preserve FIFO priority; price changes and quantity increases requeue the order.
 
 ## Suggested implementation order right now
 

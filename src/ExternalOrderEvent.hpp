@@ -6,7 +6,7 @@
 
 namespace bookforge {
 
-enum class EventType { New, Cancel, Fill, Reject, Trigger, Other };
+enum class EventType { New, Cancel, Fill, Replace, Reject, Trigger, Other };
 
 struct ExternalOrderEvent {
     std::chrono::nanoseconds ts;
@@ -17,7 +17,7 @@ struct ExternalOrderEvent {
     double size;
     bool isAsk;             // true = ask, false = bid
     int statusId;           // raw Hyperliquid code
-    std::string statusText; // e.g. "open", "perpMarginRejected"
+    std::string statusText; // e.g. "open", "replaced"
     EventType eventType;
 };
 

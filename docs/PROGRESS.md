@@ -1805,3 +1805,12 @@ Support replay order amendments by external ID
 ```
 
 The next lifecycle feature should parse an explicit amendment event and use the existing `OrderBook::ReplaceOrder(...)` path. It should preserve priority only for same-price quantity reductions and requeue orders for price changes or quantity increases.
+
+## August 26, 2026 — Replay amendments
+
+- Added explicit `Replace` event support for ID-bearing replay datasets.
+- Recognized `replaced`, `replace`, `amended`, `amend`, and status ID `6`.
+- Same-price quantity reductions now preserve FIFO queue position.
+- Price changes and quantity increases now requeue orders with a new synthetic timestamp.
+- Added reader, adapter, and lifecycle-fixture regression coverage.
+- Removed a duplicate fill-size parser definition from the Hyperliquid CSV reader.

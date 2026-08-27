@@ -1,6 +1,7 @@
 ﻿#include <gtest/gtest.h>
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 
 #include "HyperliquidMatchingEngineAdapter.hpp"
@@ -12,9 +13,10 @@ namespace {
 
 ExternalOrderEvent MakeEvent(EventType event_type, bool is_ask, double price, double size,
                              int status_id = 1, const std::string &status_text = "open",
-                             const std::string &external_order_id = {}) {
+                             const std::string &external_order_id = {},
+                             std::int64_t timestamp_ns = 0) {
     ExternalOrderEvent event{};
-    event.ts = std::chrono::nanoseconds{0};
+    event.ts = std::chrono::nanoseconds{timestamp_ns};
     event.external_order_id = external_order_id;
     event.price = price;
     event.size = size;
@@ -257,6 +259,72 @@ TEST(HyperliquidMatchingEngineAdapterTest, RepeatedFullFillIsSafeNoOp) {
 
     EXPECT_FALSE(engine.Book().GetBestAsk().has_value());
     EXPECT_EQ(adapter.Stats().externallyFilledOrders, 1U);
+    EXPECT_EQ(adapter.Stats().ignoredEvents, 1U);
+    EXPECT_EQ(adapter.Metrics().unsupported, 1U);
+}
+TEST(HyperliquidMatchingEngineAdapterTest, SamePriceQuantityReductionPreservesQueuePriority) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    adapter.OnEvent(MakeEvent(EventType::New, true, 100.00, 0.00002, 1, "open", "external-ask-1"));
+    adapter.OnEvent(MakeEvent(EventType::New, true, 100.00, 0.00002, 1, "open", "external-ask-2"));
+
+    adapter.OnEvent(
+        MakeEvent(EventType::Replace, true, 100.00, 0.00001, 6, "replaced", "external-ask-1"));
+
+    adapter.OnEvent(MakeEvent(EventType::New, false, 100.00, 0.00001, 1, "open", "crossing-bid"));
+
+    const std::vector<Trade> &trades = adapter.Trades();
+    ASSERT_EQ(trades.size(), 1U);
+    EXPECT_EQ(trades[0].maker_order_id, 1U);
+    EXPECT_EQ(adapter.Stats().replacedOrders, 1U);
+
+    const auto ask_depth = engine.Book().GetAskDepth(1);
+    ASSERT_EQ(ask_depth.size(), 1U);
+    EXPECT_EQ(ask_depth[0].second, 2U);
+}
+
+TEST(HyperliquidMatchingEngineAdapterTest, SamePriceQuantityIncreaseLosesQueuePriority) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    adapter.OnEvent(MakeEvent(EventType::New, true, 100.00, 0.00001, 1, "open", "external-ask-1"));
+    adapter.OnEvent(MakeEvent(EventType::New, true, 100.00, 0.00001, 1, "open", "external-ask-2"));
+
+    adapter.OnEvent(
+        MakeEvent(EventType::Replace, true, 100.00, 0.00002, 6, "replaced", "external-ask-1"));
+
+    adapter.OnEvent(MakeEvent(EventType::New, false, 100.00, 0.00001, 1, "open", "crossing-bid"));
+
+    const std::vector<Trade> &trades = adapter.Trades();
+    ASSERT_EQ(trades.size(), 1U);
+    EXPECT_EQ(trades[0].maker_order_id, 2U);
+    EXPECT_EQ(adapter.Stats().replacedOrders, 1U);
+}
+
+TEST(HyperliquidMatchingEngineAdapterTest, PriceChangeReplacesRestingOrder) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    adapter.OnEvent(MakeEvent(EventType::New, true, 101.00, 0.00002, 1, "open", "external-ask-1"));
+    adapter.OnEvent(
+        MakeEvent(EventType::Replace, true, 100.00, 0.00002, 6, "replaced", "external-ask-1"));
+
+    const auto best_ask = engine.Book().GetBestAsk();
+    ASSERT_TRUE(best_ask.has_value());
+    EXPECT_DOUBLE_EQ(*best_ask, 100.00);
+    EXPECT_EQ(adapter.Stats().replacedOrders, 1U);
+}
+
+TEST(HyperliquidMatchingEngineAdapterTest, ReplaceWithUnknownExternalIdIsIgnored) {
+    MatchingEngine engine;
+    HyperliquidMatchingEngineAdapter adapter(engine);
+
+    adapter.OnEvent(
+        MakeEvent(EventType::Replace, true, 100.00, 0.00002, 6, "replaced", "unknown-order"));
+
+    EXPECT_EQ(adapter.Stats().replaceCount, 1U);
+    EXPECT_EQ(adapter.Stats().replacedOrders, 0U);
     EXPECT_EQ(adapter.Stats().ignoredEvents, 1U);
     EXPECT_EQ(adapter.Metrics().unsupported, 1U);
 }

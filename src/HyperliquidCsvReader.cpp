@@ -304,6 +304,10 @@ EventType HyperliquidCsvReader::map_event_type(const std::string &status_text) c
         return EventType::Fill;
     }
 
+    if (status == "replaced" || status == "replace" || status == "amended" || status == "amend") {
+        return EventType::Replace;
+    }
+
     if (status == "triggered" || status == "trigger") {
         return EventType::Trigger;
     }
@@ -333,31 +337,11 @@ EventType HyperliquidCsvReader::map_event_type(const std::string &status_text) c
         return EventType::Trigger;
     }
 
+    if (status == "6") {
+        return EventType::Replace;
+    }
+
     return EventType::Other;
-}
-
-std::optional<double>
-ParseExternalFillSize(const std::vector<std::string> &fields,
-                      const std::unordered_map<std::string, std::size_t> &header_index) {
-    constexpr const char *kFillSizeColumn = "fill_size";
-    constexpr const char *kFillSizeCamelCaseColumn = "fillSize";
-    constexpr const char *kFillSizeShortColumn = "fillSz";
-
-    const std::string *value = nullptr;
-
-    if (HasHeaderField(header_index, kFillSizeColumn)) {
-        value = &GetOptionalField(fields, header_index, kFillSizeColumn);
-    } else if (HasHeaderField(header_index, kFillSizeCamelCaseColumn)) {
-        value = &GetOptionalField(fields, header_index, kFillSizeCamelCaseColumn);
-    } else if (HasHeaderField(header_index, kFillSizeShortColumn)) {
-        value = &GetOptionalField(fields, header_index, kFillSizeShortColumn);
-    }
-
-    if (value == nullptr || value->empty()) {
-        return std::nullopt;
-    }
-
-    return std::stod(*value);
 }
 
 } // namespace bookforge

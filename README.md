@@ -299,6 +299,8 @@ The checked-in BTC status sample has no external ID column, so its parsed events
 
 When a `New` event with an explicit external ID rests in the internal book, a later `Cancel` event with the same ID removes that resting order. Unknown IDs, repeated cancels, empty IDs, and orders that fully crossed at submission are safe no-ops. For explicit external fill linkage, lifecycle CSVs must also provide an executed-quantity column named `fill_size`, `fillSize`, or `fillSz`. Bookforge uses that value only for `Fill` events; it does not infer fill quantity from the generic `sz` field. Partial fills reduce the mapped resting order, while a fill equal to or larger than the remaining quantity removes it.
 
+For replay order amendments, Bookforge recognizes `replaced`, `replace`, `amended`, and `amend` statuses, plus status ID `6`. A same-price quantity reduction preserves the order's FIFO queue position. A price change or quantity increase uses a replacement path and loses queue priority.
+
 ### Replay Hyperliquid-style CSV data
 
 #### Windows PowerShell
@@ -650,4 +652,5 @@ Bookforge is developed and maintained by:
 - **Dong Quan Tran (Johnny)**
 - Email: [dxt9721@mavs.uta.edu](mailto:dxt9721@mavs.uta.edu) / [dongquan.tran.johnny@gmail.com](mailto:dongquan.tran.johnny@gmail.com)
 - GitHub: [dong-quan-tran](https://github.com/dong-quan-tran)
+
 

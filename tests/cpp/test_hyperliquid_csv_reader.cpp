@@ -317,6 +317,33 @@ TEST(HyperliquidCsvReaderTest, LeavesFillSizeEmptyWhenColumnIsAbsent) {
     ASSERT_EQ(events.size(), 1U);
     EXPECT_FALSE(events[0].external_fill_size.has_value());
 }
+TEST(HyperliquidCsvReaderTest, MapsReplaceStatusesToReplaceEvents) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_replace_status_test.csv",
+                     "ts,order_id,limitPx,sz,isAsk,statusId,status\n"
+                     "2025-12-15 11:39:39.722049501,order-1,100.0,0.02000,True,6,replaced\n"
+                     "2025-12-15 11:39:39.722049502,order-2,101.0,0.02000,True,6,amended\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 2U);
+    EXPECT_EQ(events[0].eventType, EventType::Replace);
+    EXPECT_EQ(events[1].eventType, EventType::Replace);
+}
+
+TEST(HyperliquidCsvReaderTest, MapsReplaceStatusIdToReplaceEvent) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_replace_status_id_test.csv",
+                     "ts,order_id,limitPx,sz,isAsk,statusId\n"
+                     "2025-12-15 11:39:39.722049501,order-1,100.0,0.02000,True,6\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].eventType, EventType::Replace);
+}
 TEST(HyperliquidCsvReaderTest, ReadsMultipleEventTypesInOrder) {
     const std::string path = WriteTempCsv(
         "hyperliquid_reader_multiple_types_test.csv",
