@@ -1,8 +1,10 @@
 ﻿#include "HyperliquidCsvReader.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -19,6 +21,7 @@ namespace {
 constexpr char kUtf8BomFirstByte = static_cast<char>(0xEF);
 constexpr char kUtf8BomSecondByte = static_cast<char>(0xBB);
 constexpr char kUtf8BomThirdByte = static_cast<char>(0xBF);
+constexpr std::int64_t kNanosecondsPerSecond = 1'000'000'000;
 
 std::string trim(const std::string &value) {
     const auto begin = std::find_if_not(value.begin(), value.end(),
@@ -69,8 +72,93 @@ bool parse_bool(const std::string &value) {
     throw std::runtime_error("invalid boolean value: " + value);
 }
 
-std::chrono::nanoseconds parse_timestamp_stub(const std::string &) {
-    return std::chrono::nanoseconds{0};
+bool IsLeapYear(int year) {
+    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+}
+
+int DaysInMonth(int year, int month) {
+    constexpr std::array<int, 12> kDaysPerMonth{
+        31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+    };
+
+    if (month < 1 || month > 12) {
+        return 0;
+    }
+
+    if (month == 2 && IsLeapYear(year)) {
+        return 29;
+    }
+
+    return kDaysPerMonth[static_cast<std::size_t>(month - 1)];
+}
+
+bool IsDigits(const std::string &value) {
+    return !value.empty() && std::all_of(value.begin(), value.end(),
+                                         [](unsigned char ch) { return std::isdigit(ch) != 0; });
+}
+
+int ParseFixedWidthInteger(const std::string &value, std::size_t offset, std::size_t width,
+                           const char *field_name) {
+    if (offset + width > value.size()) {
+        throw std::runtime_error(std::string("invalid timestamp ") + field_name);
+    }
+
+    const std::string field = value.substr(offset, width);
+    if (!IsDigits(field)) {
+        throw std::runtime_error(std::string("invalid timestamp ") + field_name);
+    }
+
+    return std::stoi(field);
+}
+
+std::chrono::nanoseconds ParseTimestampUtc(const std::string &value) {
+    constexpr std::size_t kWholeSecondLength = 19;
+
+    if (value.size() < kWholeSecondLength || value[4] != '-' || value[7] != '-' ||
+        value[10] != ' ' || value[13] != ':' || value[16] != ':') {
+        throw std::runtime_error("invalid timestamp format");
+    }
+
+    const int year = ParseFixedWidthInteger(value, 0, 4, "year");
+    const int month = ParseFixedWidthInteger(value, 5, 2, "month");
+    const int day = ParseFixedWidthInteger(value, 8, 2, "day");
+    const int hour = ParseFixedWidthInteger(value, 11, 2, "hour");
+    const int minute = ParseFixedWidthInteger(value, 14, 2, "minute");
+    const int second = ParseFixedWidthInteger(value, 17, 2, "second");
+
+    if (month < 1 || month > 12 || day < 1 || day > DaysInMonth(year, month) || hour < 0 ||
+        hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
+        throw std::runtime_error("timestamp value out of range");
+    }
+
+    std::int64_t fractional_nanoseconds = 0;
+
+    if (value.size() > kWholeSecondLength) {
+        if (value[kWholeSecondLength] != '.') {
+            throw std::runtime_error("invalid timestamp fractional separator");
+        }
+
+        const std::string fraction = value.substr(kWholeSecondLength + 1);
+        if (fraction.empty() || fraction.size() > 9 || !IsDigits(fraction)) {
+            throw std::runtime_error("invalid timestamp fractional seconds");
+        }
+
+        fractional_nanoseconds = std::stoll(fraction);
+
+        for (std::size_t i = fraction.size(); i < 9; ++i) {
+            fractional_nanoseconds *= 10;
+        }
+    }
+
+    using namespace std::chrono;
+
+    const sys_days date =
+        year{year} / month{static_cast<unsigned>(month)} / day{static_cast<unsigned>(day)};
+    const sys_time<seconds> whole_seconds = date + hours{hour} + minutes{minute} + seconds{second};
+    const auto epoch_nanoseconds =
+        duration_cast<nanoseconds>(whole_seconds.time_since_epoch()).count();
+
+    return nanoseconds{epoch_nanoseconds + fractional_nanoseconds};
 }
 
 std::unordered_map<std::string, std::size_t>
@@ -237,7 +325,7 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
                     throw std::runtime_error("expected at least 5 CSV fields");
                 }
 
-                event.ts = parse_timestamp_stub(fields[0]);
+                event.ts = ParseTimestampUtc(fields[0]);
                 event.symbol = "";
                 event.external_order_id = "";
                 event.external_fill_size = std::nullopt;
@@ -254,7 +342,7 @@ std::vector<ExternalOrderEvent> HyperliquidCsvReader::read_all(bool strict_mode,
                     event.eventType = map_event_type(std::to_string(event.statusId));
                 }
             } else {
-                event.ts = parse_timestamp_stub(GetRequiredField(fields, header_index, "ts"));
+                event.ts = ParseTimestampUtc(GetRequiredField(fields, header_index, "ts"));
                 event.symbol = ParseSymbol(fields, header_index);
                 event.external_order_id = ParseExternalOrderId(fields, header_index);
                 event.external_fill_size = ParseExternalFillSize(fields, header_index);

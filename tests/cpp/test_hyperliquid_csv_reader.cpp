@@ -344,6 +344,87 @@ TEST(HyperliquidCsvReaderTest, MapsReplaceStatusIdToReplaceEvent) {
     ASSERT_EQ(events.size(), 1U);
     EXPECT_EQ(events[0].eventType, EventType::Replace);
 }
+TEST(HyperliquidCsvReaderTest, ParsesWholeSecondTimestampAsUtcEpochNanoseconds) {
+    const std::string path = WriteTempCsv("hyperliquid_reader_whole_second_timestamp_test.csv",
+                                          "ts,limitPx,sz,isAsk,statusId,status\n"
+                                          "1970-01-01 00:00:01,100.0,0.01000,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].ts.count(), 1'000'000'000LL);
+}
+
+TEST(HyperliquidCsvReaderTest, ParsesNanosecondTimestampAsUtcEpochNanoseconds) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_nanosecond_timestamp_test.csv",
+                     "ts,limitPx,sz,isAsk,statusId,status\n"
+                     "1970-01-01 00:00:01.123456789,100.0,0.01000,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].ts.count(), 1'123'456'789LL);
+}
+
+TEST(HyperliquidCsvReaderTest, PadsShortFractionalTimestampPrecisionToNanoseconds) {
+    const std::string path = WriteTempCsv("hyperliquid_reader_fractional_timestamp_test.csv",
+                                          "ts,limitPx,sz,isAsk,statusId,status\n"
+                                          "1970-01-01 00:00:01.123,100.0,0.01000,True,1,open\n"
+                                          "1970-01-01 00:00:02.123456,101.0,0.01000,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 2U);
+    EXPECT_EQ(events[0].ts.count(), 1'123'000'000LL);
+    EXPECT_EQ(events[1].ts.count(), 2'123'456'000LL);
+}
+
+TEST(HyperliquidCsvReaderTest, RejectsMalformedTimestampInStrictMode) {
+    const std::string path = WriteTempCsv("hyperliquid_reader_bad_timestamp_test.csv",
+                                          "ts,limitPx,sz,isAsk,statusId,status\n"
+                                          "2025-13-01 00:00:00,100.0,0.01000,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+
+    EXPECT_THROW(
+        {
+            const auto events = reader.read_all(true, false);
+            (void)events;
+        },
+        std::exception);
+}
+
+TEST(HyperliquidCsvReaderTest, SkipsMalformedTimestampInNonStrictMode) {
+    const std::string path = WriteTempCsv("hyperliquid_reader_bad_timestamp_nonstrict_test.csv",
+                                          "ts,limitPx,sz,isAsk,statusId,status\n"
+                                          "not-a-timestamp,100.0,0.01000,True,1,open\n"
+                                          "1970-01-01 00:00:02,101.0,0.01000,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(false, false);
+
+    ASSERT_EQ(events.size(), 1U);
+    EXPECT_EQ(events[0].ts.count(), 2'000'000'000LL);
+}
+
+TEST(HyperliquidCsvReaderTest, PreservesParsedTimestampOrderFromInputRows) {
+    const std::string path =
+        WriteTempCsv("hyperliquid_reader_timestamp_order_test.csv",
+                     "ts,limitPx,sz,isAsk,statusId,status\n"
+                     "1970-01-01 00:00:03.000000001,100.0,0.01000,True,1,open\n"
+                     "1970-01-01 00:00:03.000000002,101.0,0.01000,True,1,open\n");
+
+    HyperliquidCsvReader reader(path);
+    const auto events = reader.read_all(true, false);
+
+    ASSERT_EQ(events.size(), 2U);
+    EXPECT_LT(events[0].ts, events[1].ts);
+    EXPECT_EQ(events[1].ts - events[0].ts, std::chrono::nanoseconds{1});
+}
 TEST(HyperliquidCsvReaderTest, ReadsMultipleEventTypesInOrder) {
     const std::string path = WriteTempCsv(
         "hyperliquid_reader_multiple_types_test.csv",
