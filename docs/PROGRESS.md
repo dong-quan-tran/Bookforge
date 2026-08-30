@@ -1814,3 +1814,11 @@ The next lifecycle feature should parse an explicit amendment event and use the 
 - Price changes and quantity increases now requeue orders with a new synthetic timestamp.
 - Added reader, adapter, and lifecycle-fixture regression coverage.
 - Removed a duplicate fill-size parser definition from the Hyperliquid CSV reader.
+
+## August 28, 2026 - Replay timestamp normalization
+
+- Replaced the zero-value timestamp parser with UTC timestamp normalization.
+- Added support for whole-second and 1-9 digit fractional timestamp precision.
+- Normalized parsed timestamps to Unix epoch nanoseconds.
+- Added strict and non-strict malformed timestamp coverage.
+- Prepared replay timestamps for event-time metrics and strategy time-to-fill work.

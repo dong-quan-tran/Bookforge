@@ -303,6 +303,10 @@ For replay order amendments, Bookforge recognizes `replaced`, `replace`, `amende
 
 ### Replay Hyperliquid-style CSV data
 
+### Replay timestamps
+
+Bookforge parses `ts` values in the form `YYYY-MM-DD HH:MM:SS` with optional fractional seconds up to nanosecond precision. Timestamps are interpreted as UTC and normalized to Unix epoch nanoseconds. They preserve source ordering and are used for replay pacing and future execution-timing metrics.
+
 #### Windows PowerShell
 
 ```powershell

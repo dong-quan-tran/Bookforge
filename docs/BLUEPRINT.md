@@ -1,4 +1,4 @@
-# Bookforge Blueprint
+﻿# Bookforge Blueprint
 
 ## Project summary
 
@@ -366,6 +366,7 @@ These are optional but high-value if time allows.
 - [x] Support replay order amendments by explicit external ID
 - [x] Preserve queue priority for same-price quantity reductions
 - [x] Requeue orders after replayed price changes or quantity increases
+- [x] Normalize Hyperliquid-style CSV timestamps to UTC Unix epoch nanoseconds
 
 ### Product / presentation
 
@@ -403,6 +404,7 @@ These are optional but high-value if time allows.
 - [ ] Stateful external cancel/fill linkage remains pending; it will only operate on explicit external IDs and will not infer identity from price, size, or timestamp.
 - [x] Stateful replay lifecycle supports explicit-ID New, Cancel, Fill, and Replace events.
 - [x] Same-price quantity reductions preserve FIFO priority; price changes and quantity increases requeue the order.
+- [x] Replay events preserve normalized UTC timestamps with fractional precision up to nanoseconds.
 
 ## Suggested implementation order right now
 
