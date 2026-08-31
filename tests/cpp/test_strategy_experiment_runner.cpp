@@ -1,5 +1,7 @@
 ﻿#include "replay/StrategyExperimentRunner.hpp"
 
+#include <chrono>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -11,8 +13,9 @@ namespace bookforge {
 namespace {
 
 ExternalOrderEvent MakeNewEvent(bool is_ask, double price, double size,
-                                const std::string &symbol = {}) {
+                                const std::string &symbol = {}, std::int64_t timestamp_ns = 0) {
     ExternalOrderEvent event{};
+    event.ts = std::chrono::nanoseconds{timestamp_ns};
     event.eventType = EventType::New;
     event.symbol = symbol;
     event.isAsk = is_ask;
@@ -66,6 +69,8 @@ TEST(StrategyExperimentRunnerTest, UnfilledInjectedOrderLeavesExecutionMetricsEm
     EXPECT_EQ(result.remaining_qty, 3U);
     EXPECT_DOUBLE_EQ(result.fill_rate, 0.0);
     EXPECT_DOUBLE_EQ(result.avg_execution_price, 0.0);
+    EXPECT_EQ(result.time_to_first_fill_us, 0U);
+    EXPECT_EQ(result.time_to_full_fill_us, 0U);
 }
 
 TEST(StrategyExperimentRunnerTest, InjectedOrderFillsUpdateExperimentResult) {
@@ -81,7 +86,7 @@ TEST(StrategyExperimentRunnerTest, InjectedOrderFillsUpdateExperimentResult) {
     config.quantity = 3;
 
     const std::vector<ExternalOrderEvent> events{
-        MakeNewEvent(true, 100.0, 0.00002),
+        MakeNewEvent(true, 100.0, 0.00002, {}, 1'000'000),
     };
 
     const auto result = runner.RunOnce(config, events, "experiment-order", "experiment");
@@ -91,6 +96,34 @@ TEST(StrategyExperimentRunnerTest, InjectedOrderFillsUpdateExperimentResult) {
     EXPECT_EQ(result.remaining_qty, 1U);
     EXPECT_DOUBLE_EQ(result.fill_rate, 2.0 / 3.0);
     EXPECT_DOUBLE_EQ(result.avg_execution_price, 100.0);
+    EXPECT_EQ(result.time_to_first_fill_us, 0U);
+    EXPECT_EQ(result.time_to_full_fill_us, 0U);
+}
+
+TEST(StrategyExperimentRunnerTest, RecordsReplayTimeForLaterPassiveOrderFill) {
+    ReplayConfig replay_config;
+    StrategyExperimentRunner runner(replay_config);
+
+    StrategyExperimentConfig config;
+    config.mode = StrategyMode::Passive;
+    config.entry_offset = 0;
+    config.timing = InjectedOrderTiming::AfterEvent;
+    config.is_buy = true;
+    config.limit_price = 100.0;
+    config.quantity = 2;
+
+    const std::vector<ExternalOrderEvent> events{
+        MakeNewEvent(true, 101.0, 0.00001, {}, 1'000'000),
+        MakeNewEvent(true, 100.0, 0.00002, {}, 4'500'000),
+    };
+
+    const auto result = runner.RunOnce(config, events, "experiment-order", "experiment");
+
+    EXPECT_EQ(result.filled_qty, 2U);
+    EXPECT_EQ(result.remaining_qty, 0U);
+    EXPECT_DOUBLE_EQ(result.avg_execution_price, 100.0);
+    EXPECT_EQ(result.time_to_first_fill_us, 3'500U);
+    EXPECT_EQ(result.time_to_full_fill_us, 3'500U);
 }
 
 TEST(StrategyExperimentRunnerTest, AfterEventCapturesBookAfterConfiguredEntryEvent) {

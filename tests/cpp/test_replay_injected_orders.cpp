@@ -1,5 +1,6 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,7 @@ class RecordingReplayAdapter final : public IReplayAdapter {
 
     void OnInjectedOrder(const InjectedOrder &order) override {
         seen.push_back("inject:" + order.order_id);
+        injected_timestamps.push_back(order.replay_timestamp_ns);
     }
 
     const AdapterMetrics &Metrics() const override {
@@ -28,15 +30,17 @@ class RecordingReplayAdapter final : public IReplayAdapter {
 
     AdapterMetrics metrics_{};
     std::vector<std::string> seen;
+    std::vector<std::uint64_t> injected_timestamps;
 };
 
-ExternalOrderEvent MakeEvent() {
-    ExternalOrderEvent ev{};
-    ev.eventType = EventType::New;
-    ev.price = 100.0;
-    ev.size = 1.0;
-    ev.isAsk = false;
-    return ev;
+ExternalOrderEvent MakeEvent(std::int64_t timestamp_ns) {
+    ExternalOrderEvent event{};
+    event.ts = std::chrono::nanoseconds{timestamp_ns};
+    event.eventType = EventType::New;
+    event.price = 100.0;
+    event.size = 1.0;
+    event.isAsk = false;
+    return event;
 }
 
 TEST(ReplayRunnerInjectedOrdersTest, DispatchesInjectedOrdersBeforeAndAfterConfiguredEvent) {
@@ -44,9 +48,9 @@ TEST(ReplayRunnerInjectedOrdersTest, DispatchesInjectedOrdersBeforeAndAfterConfi
     ReplayRunner runner(config);
 
     std::vector<ExternalOrderEvent> events{
-        MakeEvent(),
-        MakeEvent(),
-        MakeEvent(),
+        MakeEvent(100),
+        MakeEvent(200),
+        MakeEvent(300),
     };
 
     InjectedOrderSchedule schedule;
@@ -75,7 +79,15 @@ TEST(ReplayRunnerInjectedOrdersTest, DispatchesInjectedOrdersBeforeAndAfterConfi
     const std::vector<std::string> expected{
         "event", "inject:X", "event", "inject:Y", "event",
     };
+
     EXPECT_EQ(adapter.seen, expected);
+
+    const std::vector<std::uint64_t> expected_timestamps{
+        200,
+        200,
+    };
+
+    EXPECT_EQ(adapter.injected_timestamps, expected_timestamps);
 }
 
 } // namespace

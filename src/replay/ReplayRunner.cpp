@@ -1,7 +1,8 @@
-#include "replay/ReplayRunner.hpp"
+﻿#include "replay/ReplayRunner.hpp"
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -18,16 +19,23 @@ std::vector<std::chrono::nanoseconds> DefaultPacingDelayBounds() {
 }
 
 void DispatchInjectedOrders(IReplayAdapter &adapter, const InjectedOrderSchedule &schedule,
-                            std::size_t event_index, InjectedOrderTiming timing) {
+                            std::size_t event_index, InjectedOrderTiming timing,
+                            std::chrono::nanoseconds replay_timestamp) {
     const auto *orders = schedule.Find(event_index);
     if (orders == nullptr) {
         return;
     }
 
-    for (const auto &order : *orders) {
-        if (order.timing == timing) {
-            adapter.OnInjectedOrder(order);
+    for (const InjectedOrder &scheduled_order : *orders) {
+        if (scheduled_order.timing != timing) {
+            continue;
         }
+
+        InjectedOrder order = scheduled_order;
+        order.replay_timestamp_ns =
+            replay_timestamp.count() < 0 ? 0 : static_cast<std::uint64_t>(replay_timestamp.count());
+
+        adapter.OnInjectedOrder(order);
     }
 }
 
@@ -92,9 +100,10 @@ bool ReplayRunner::Run(IReplayAdapter &adapter, const std::vector<ExternalOrderE
             }
         }
 
-        DispatchInjectedOrders(adapter, schedule, i, InjectedOrderTiming::BeforeEvent);
+        DispatchInjectedOrders(adapter, schedule, i, InjectedOrderTiming::BeforeEvent,
+                               events[i].ts);
         adapter.OnEvent(events[i]);
-        DispatchInjectedOrders(adapter, schedule, i, InjectedOrderTiming::AfterEvent);
+        DispatchInjectedOrders(adapter, schedule, i, InjectedOrderTiming::AfterEvent, events[i].ts);
 
         previous_event = &events[i];
         ++processed;
@@ -106,7 +115,7 @@ bool ReplayRunner::Run(IReplayAdapter &adapter, const std::vector<ExternalOrderE
     }
 
     if (config_.log_summary) {
-        const auto &adapter_metrics = adapter.Metrics();
+        const AdapterMetrics &adapter_metrics = adapter.Metrics();
         std::cout << "[ReplayRunner] summary"
                   << " processed=" << processed << " submitted=" << adapter_metrics.submitted
                   << " ignored=" << adapter_metrics.ignored

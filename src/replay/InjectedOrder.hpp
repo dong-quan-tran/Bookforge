@@ -19,6 +19,8 @@ struct InjectedOrder {
     bool is_buy{true};
     double price{0.0};
     std::uint32_t quantity{0};
+
+    std::uint64_t replay_timestamp_ns{0};
 };
 
 } // namespace bookforge

@@ -1,4 +1,4 @@
-#include "replay/StrategyExperimentRunner.hpp"
+﻿#include "replay/StrategyExperimentRunner.hpp"
 
 #include <string>
 #include <utility>
@@ -26,6 +26,7 @@ class StrategyExperimentReplayAdapter final : public IReplayAdapter {
     void OnInjectedOrder(const InjectedOrder &order) override {
         if (order.order_id == experiment_order_id_) {
             experiment_adapter_.CaptureDecisionBookState(engine_.CaptureTopOfBook());
+            experiment_adapter_.RecordInjectionTimestamp(order.replay_timestamp_ns);
         }
 
         experiment_adapter_.OnInjectedOrder(order);
@@ -60,7 +61,7 @@ StrategyExperimentRunner::RunOnce(const StrategyExperimentConfig &experiment_con
         engine,
         [&experiment_adapter, &injected_order_id](const InjectedOrder &order, const Trade &trade) {
             if (order.order_id == injected_order_id) {
-                experiment_adapter.OnFill(trade.quantity, trade.price);
+                experiment_adapter.OnFill(trade.quantity, trade.price, trade.timestamp);
             }
         });
 

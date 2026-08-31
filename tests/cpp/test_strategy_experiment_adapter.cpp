@@ -1,4 +1,4 @@
-#include "replay/StrategyExperimentAdapter.hpp"
+﻿#include "replay/StrategyExperimentAdapter.hpp"
 
 #include <gtest/gtest.h>
 
@@ -44,6 +44,8 @@ TEST(StrategyExperimentAdapterTest, InitializesResultFromConfig) {
     EXPECT_FALSE(result.decision_best_bid.has_value());
     EXPECT_FALSE(result.decision_best_ask.has_value());
     EXPECT_FALSE(result.has_decision_metrics);
+    EXPECT_EQ(result.time_to_first_fill_us, 0U);
+    EXPECT_EQ(result.time_to_full_fill_us, 0U);
 }
 
 TEST(StrategyExperimentAdapterTest, NoFillLeavesExecutionMetricsAtDefaults) {
@@ -56,12 +58,14 @@ TEST(StrategyExperimentAdapterTest, NoFillLeavesExecutionMetricsAtDefaults) {
     EXPECT_DOUBLE_EQ(result.fill_rate, 0.0);
     EXPECT_DOUBLE_EQ(result.avg_execution_price, 0.0);
     EXPECT_DOUBLE_EQ(result.implementation_shortfall_bps, 0.0);
+    EXPECT_EQ(result.time_to_first_fill_us, 0U);
+    EXPECT_EQ(result.time_to_full_fill_us, 0U);
 }
 
 TEST(StrategyExperimentAdapterTest, PartialFillUpdatesResult) {
     StrategyExperimentAdapter adapter(MakeConfig(5));
 
-    adapter.OnFill(3, 100.25);
+    adapter.OnFill(3, 100.25, 0);
 
     const auto result = adapter.Result();
 
@@ -74,8 +78,8 @@ TEST(StrategyExperimentAdapterTest, PartialFillUpdatesResult) {
 TEST(StrategyExperimentAdapterTest, MultipleFillsUseWeightedAverageExecutionPrice) {
     StrategyExperimentAdapter adapter(MakeConfig(10));
 
-    adapter.OnFill(3, 100.0);
-    adapter.OnFill(2, 103.0);
+    adapter.OnFill(3, 100.0, 0);
+    adapter.OnFill(2, 103.0, 0);
 
     const auto result = adapter.Result();
 
@@ -88,8 +92,8 @@ TEST(StrategyExperimentAdapterTest, MultipleFillsUseWeightedAverageExecutionPric
 TEST(StrategyExperimentAdapterTest, FillQuantityIsClampedToRequestedQuantity) {
     StrategyExperimentAdapter adapter(MakeConfig(5));
 
-    adapter.OnFill(3, 100.0);
-    adapter.OnFill(10, 110.0);
+    adapter.OnFill(3, 100.0, 0);
+    adapter.OnFill(10, 110.0, 0);
 
     const auto result = adapter.Result();
 
@@ -97,6 +101,47 @@ TEST(StrategyExperimentAdapterTest, FillQuantityIsClampedToRequestedQuantity) {
     EXPECT_EQ(result.remaining_qty, 0U);
     EXPECT_DOUBLE_EQ(result.fill_rate, 1.0);
     EXPECT_DOUBLE_EQ(result.avg_execution_price, 104.0);
+}
+
+TEST(StrategyExperimentAdapterTest, RecordsFirstAndFullFillTimingAfterInjection) {
+    StrategyExperimentAdapter adapter(MakeConfig(5));
+
+    adapter.RecordInjectionTimestamp(1'000'000);
+    adapter.OnFill(3, 100.0, 3'500'000);
+    adapter.OnFill(2, 101.0, 8'000'000);
+
+    const auto result = adapter.Result();
+
+    EXPECT_EQ(result.filled_qty, 5U);
+    EXPECT_EQ(result.remaining_qty, 0U);
+    EXPECT_EQ(result.time_to_first_fill_us, 2'500U);
+    EXPECT_EQ(result.time_to_full_fill_us, 7'000U);
+}
+
+TEST(StrategyExperimentAdapterTest, PartialFillRecordsOnlyFirstFillTiming) {
+    StrategyExperimentAdapter adapter(MakeConfig(5));
+
+    adapter.RecordInjectionTimestamp(1'000'000);
+    adapter.OnFill(3, 100.0, 3'500'000);
+
+    const auto result = adapter.Result();
+
+    EXPECT_EQ(result.filled_qty, 3U);
+    EXPECT_EQ(result.remaining_qty, 2U);
+    EXPECT_EQ(result.time_to_first_fill_us, 2'500U);
+    EXPECT_EQ(result.time_to_full_fill_us, 0U);
+}
+
+TEST(StrategyExperimentAdapterTest, EarlierFillTimestampClampsTimingToZero) {
+    StrategyExperimentAdapter adapter(MakeConfig(2));
+
+    adapter.RecordInjectionTimestamp(5'000'000);
+    adapter.OnFill(2, 100.0, 3'000'000);
+
+    const auto result = adapter.Result();
+
+    EXPECT_EQ(result.time_to_first_fill_us, 0U);
+    EXPECT_EQ(result.time_to_full_fill_us, 0U);
 }
 
 TEST(StrategyExperimentAdapterTest, CapturesTwoSidedDecisionBookState) {
@@ -153,7 +198,7 @@ TEST(StrategyExperimentAdapterTest, BuyPartialFillAboveDecisionMidHasPositiveSho
     StrategyExperimentAdapter adapter(MakeConfig(10, true));
 
     adapter.CaptureDecisionBookState(MakeTwoSidedSnapshot(99.0, 101.0));
-    adapter.OnFill(4, 101.0);
+    adapter.OnFill(4, 101.0, 0);
 
     const auto result = adapter.Result();
 
@@ -167,7 +212,7 @@ TEST(StrategyExperimentAdapterTest, SellFullFillBelowDecisionMidHasPositiveShort
     StrategyExperimentAdapter adapter(MakeConfig(5, false));
 
     adapter.CaptureDecisionBookState(MakeTwoSidedSnapshot(99.0, 101.0));
-    adapter.OnFill(5, 98.0);
+    adapter.OnFill(5, 98.0, 0);
 
     const auto result = adapter.Result();
 
@@ -184,7 +229,7 @@ TEST(StrategyExperimentAdapterTest, UnavailableDecisionPriceLeavesShortfallAtZer
     snapshot.best_bid = 99.0;
 
     adapter.CaptureDecisionBookState(snapshot);
-    adapter.OnFill(5, 101.0);
+    adapter.OnFill(5, 101.0, 0);
 
     const auto result = adapter.Result();
 

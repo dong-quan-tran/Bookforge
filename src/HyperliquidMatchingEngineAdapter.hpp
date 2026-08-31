@@ -91,8 +91,8 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     void OnInjectedOrder(const InjectedOrder &order) override {
         ++stats_.injectedOrders;
 
-        const MatchResult result =
-            SubmitOrder(order.is_buy ? Side::Buy : Side::Sell, order.price, order.quantity);
+        const MatchResult result = SubmitOrder(order.is_buy ? Side::Buy : Side::Sell, order.price,
+                                               order.quantity, order.replay_timestamp_ns);
 
         if (!injected_order_fill_handler_) {
             return;
@@ -124,7 +124,9 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     void SubmitExternalNewOrder(const ExternalOrderEvent &event) {
         const Side side = event.isAsk ? Side::Sell : Side::Buy;
         const std::uint32_t quantity = ToInternalQuantity(event.size);
-        const SubmittedOrder submitted_order = SubmitOrderWithId(side, event.price, quantity);
+        const std::uint64_t timestamp = ToInternalTimestamp(event.ts);
+        const SubmittedOrder submitted_order =
+            SubmitOrderWithId(side, event.price, quantity, timestamp);
 
         if (event.external_order_id.empty() || submitted_order.internal_order_id == 0 ||
             submitted_order.match_result.remaining_quantity != 0) {
@@ -135,11 +137,13 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
             submitted_order.internal_order_id;
     }
 
-    MatchResult SubmitOrder(Side side, double price, std::uint32_t quantity) {
-        return SubmitOrderWithId(side, price, quantity).match_result;
+    MatchResult SubmitOrder(Side side, double price, std::uint32_t quantity,
+                            std::uint64_t timestamp) {
+        return SubmitOrderWithId(side, price, quantity, timestamp).match_result;
     }
 
-    SubmittedOrder SubmitOrderWithId(Side side, double price, std::uint32_t quantity) {
+    SubmittedOrder SubmitOrderWithId(Side side, double price, std::uint32_t quantity,
+                                     std::uint64_t timestamp) {
         if (quantity == 0) {
             ++stats_.ignoredEvents;
             ++metrics_.ignored;
@@ -152,7 +156,7 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         order.side = side;
         order.price = price;
         order.quantity = quantity;
-        order.timestamp = nextSyntheticTimestamp_++;
+        order.timestamp = timestamp;
         order.stp = SelfTradePrevention::None;
 
         MatchResult result = engine_.MatchLimitOrder(order);
@@ -276,7 +280,7 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         }
 
         if (!engine_.Book().ReplaceOrder(internal_order_id, event.price, replacement_quantity,
-                                         nextSyntheticTimestamp_++)) {
+                                         ToInternalTimestamp(event.ts))) {
             MarkUnsupported();
             return;
         }
@@ -313,6 +317,14 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         ++metrics_.ignored;
     }
 
+    static std::uint64_t ToInternalTimestamp(std::chrono::nanoseconds timestamp) {
+        if (timestamp.count() < 0) {
+            return 0;
+        }
+
+        return static_cast<std::uint64_t>(timestamp.count());
+    }
+
     static std::uint32_t ToInternalQuantity(double size) {
         constexpr double scale = 100000.0;
         const double scaled = size * scale;
@@ -342,7 +354,6 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     std::unordered_map<std::string, std::uint64_t> external_to_internal_order_ids_{};
 
     std::uint64_t nextSyntheticOrderId_{1};
-    std::uint64_t nextSyntheticTimestamp_{1};
 };
 
 } // namespace bookforge
