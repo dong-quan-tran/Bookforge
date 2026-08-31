@@ -394,7 +394,7 @@ These are optional but high-value if time allows.
 - [x] Decision-time top-of-book state is captured immediately before injected-order submission, with `BeforeEvent` and `AfterEvent` timing semantics preserved.
 - [x] Sign-aware implementation shortfall is calculated when a valid decision-time mid-price and execution price are available.
 - [x] Deterministic replay pacing supports unpaced and event-time modes, a configurable speed multiplier, a wall-clock implementation, and a recording test clock.
-- [ ] Timestamp-based time-to-fill remains deferred because the matching-engine timestamps are synthetic sequence values rather than normalized replay-time microseconds.
+- [x] Timestamp-based time-to-fill is calculated from normalized replay timestamps for strategy experiments.
 - [ ] Queue-position-aware experiments still depend on richer source data and more complete order-lifecycle reconstruction.
 - [x] Multi-symbol replay routes each instrument into an isolated matching engine and adapter.
 - [x] Replay and strategy CLIs support symbol filtering, with fallback routing for legacy symbol-less CSV files.

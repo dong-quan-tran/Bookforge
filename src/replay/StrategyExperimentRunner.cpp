@@ -1,4 +1,4 @@
-﻿#include "replay/StrategyExperimentRunner.hpp"
+#include "replay/StrategyExperimentRunner.hpp"
 
 #include <string>
 #include <utility>
@@ -61,7 +61,7 @@ StrategyExperimentRunner::RunOnce(const StrategyExperimentConfig &experiment_con
         engine,
         [&experiment_adapter, &injected_order_id](const InjectedOrder &order, const Trade &trade) {
             if (order.order_id == injected_order_id) {
-                experiment_adapter.OnFill(trade.quantity, trade.price, trade.timestamp);
+                experiment_adapter.OnFill(trade.quantity, trade.price, trade.taker_timestamp);
             }
         });
 

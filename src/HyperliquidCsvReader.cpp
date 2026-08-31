@@ -21,7 +21,6 @@ namespace {
 constexpr char kUtf8BomFirstByte = static_cast<char>(0xEF);
 constexpr char kUtf8BomSecondByte = static_cast<char>(0xBB);
 constexpr char kUtf8BomThirdByte = static_cast<char>(0xBF);
-constexpr std::int64_t kNanosecondsPerSecond = 1'000'000'000;
 
 std::string trim(const std::string &value) {
     const auto begin = std::find_if_not(value.begin(), value.end(),
@@ -72,24 +71,24 @@ bool parse_bool(const std::string &value) {
     throw std::runtime_error("invalid boolean value: " + value);
 }
 
-bool IsLeapYear(int year) {
-    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+bool IsLeapYear(int year_value) {
+    return year_value % 4 == 0 && (year_value % 100 != 0 || year_value % 400 == 0);
 }
 
-int DaysInMonth(int year, int month) {
+int DaysInMonth(int year_value, int month_value) {
     constexpr std::array<int, 12> kDaysPerMonth{
         31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
     };
 
-    if (month < 1 || month > 12) {
+    if (month_value < 1 || month_value > 12) {
         return 0;
     }
 
-    if (month == 2 && IsLeapYear(year)) {
+    if (month_value == 2 && IsLeapYear(year_value)) {
         return 29;
     }
 
-    return kDaysPerMonth[static_cast<std::size_t>(month - 1)];
+    return kDaysPerMonth[static_cast<std::size_t>(month_value - 1)];
 }
 
 bool IsDigits(const std::string &value) {
@@ -119,15 +118,16 @@ std::chrono::nanoseconds ParseTimestampUtc(const std::string &value) {
         throw std::runtime_error("invalid timestamp format");
     }
 
-    const int year = ParseFixedWidthInteger(value, 0, 4, "year");
-    const int month = ParseFixedWidthInteger(value, 5, 2, "month");
-    const int day = ParseFixedWidthInteger(value, 8, 2, "day");
-    const int hour = ParseFixedWidthInteger(value, 11, 2, "hour");
-    const int minute = ParseFixedWidthInteger(value, 14, 2, "minute");
-    const int second = ParseFixedWidthInteger(value, 17, 2, "second");
+    const int year_value = ParseFixedWidthInteger(value, 0, 4, "year");
+    const int month_value = ParseFixedWidthInteger(value, 5, 2, "month");
+    const int day_value = ParseFixedWidthInteger(value, 8, 2, "day");
+    const int hour_value = ParseFixedWidthInteger(value, 11, 2, "hour");
+    const int minute_value = ParseFixedWidthInteger(value, 14, 2, "minute");
+    const int second_value = ParseFixedWidthInteger(value, 17, 2, "second");
 
-    if (month < 1 || month > 12 || day < 1 || day > DaysInMonth(year, month) || hour < 0 ||
-        hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
+    if (month_value < 1 || month_value > 12 || day_value < 1 ||
+        day_value > DaysInMonth(year_value, month_value) || hour_value < 0 || hour_value > 23 ||
+        minute_value < 0 || minute_value > 59 || second_value < 0 || second_value > 59) {
         throw std::runtime_error("timestamp value out of range");
     }
 
@@ -152,9 +152,11 @@ std::chrono::nanoseconds ParseTimestampUtc(const std::string &value) {
 
     using namespace std::chrono;
 
-    const sys_days date =
-        year{year} / month{static_cast<unsigned>(month)} / day{static_cast<unsigned>(day)};
-    const sys_time<seconds> whole_seconds = date + hours{hour} + minutes{minute} + seconds{second};
+    const sys_days date = std::chrono::year{year_value} /
+                          std::chrono::month{static_cast<unsigned>(month_value)} /
+                          std::chrono::day{static_cast<unsigned>(day_value)};
+    const sys_time<seconds> whole_seconds =
+        date + hours{hour_value} + minutes{minute_value} + seconds{second_value};
     const auto epoch_nanoseconds =
         duration_cast<nanoseconds>(whole_seconds.time_since_epoch()).count();
 

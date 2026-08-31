@@ -112,7 +112,7 @@ The result schema includes:
 - `implementation_shortfall_bps`
 - `time_to_first_fill_us` and `time_to_full_fill_us`
 
-Timestamp-based fill timing remains deferred because current matching-engine timestamps are synthetic sequence values rather than normalized replay-time microseconds.
+Time-to-fill metrics are measured in replay-time microseconds from injected-order submission to the first fill and full fill. Replay timestamps are normalized from source CSV values; a zero value means the order did not reach that fill milestone or the observed fill time was not later than injection time.
 
 ### Python research layer
 

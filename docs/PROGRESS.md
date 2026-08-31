@@ -1822,3 +1822,11 @@ The next lifecycle feature should parse an explicit amendment event and use the 
 - Normalized parsed timestamps to Unix epoch nanoseconds.
 - Added strict and non-strict malformed timestamp coverage.
 - Prepared replay timestamps for event-time metrics and strategy time-to-fill work.
+
+## August 30, 2026 - Strategy replay-time fill metrics
+
+- Added replay timestamps to dispatched injected orders.
+- Matching-engine orders now use normalized event timestamps rather than synthetic sequence timestamps when replay time is available.
+- Strategy experiments now record injection time, time to first fill, and time to full fill in microseconds.
+- Fill timing clamps negative or equal timestamps to zero.
+- Added unit and runner coverage for immediate fills, delayed passive fills, partial fills, full fills, and replay-time injection dispatch.
