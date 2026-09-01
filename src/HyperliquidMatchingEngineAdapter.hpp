@@ -91,14 +91,19 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     void OnInjectedOrder(const InjectedOrder &order) override {
         ++stats_.injectedOrders;
 
-        const MatchResult result = SubmitOrder(order.is_buy ? Side::Buy : Side::Sell, order.price,
-                                               order.quantity, order.replay_timestamp_ns);
+        const SubmittedOrder submitted_order =
+            SubmitOrderWithId(order.is_buy ? Side::Buy : Side::Sell, order.price, order.quantity,
+                              order.replay_timestamp_ns);
+
+        if (submitted_order.internal_order_id != 0) {
+            injected_orders_by_internal_id_[submitted_order.internal_order_id] = order;
+        }
 
         if (!injected_order_fill_handler_) {
             return;
         }
 
-        for (const Trade &trade : result.trades) {
+        for (const Trade &trade : submitted_order.match_result.trades) {
             injected_order_fill_handler_(order, trade);
         }
     }
@@ -121,12 +126,27 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
         MatchResult match_result;
     };
 
+    void NotifyInjectedOrderFills(const std::vector<Trade> &trades) {
+        if (!injected_order_fill_handler_) {
+            return;
+        }
+
+        for (const Trade &trade : trades) {
+            const auto maker_it = injected_orders_by_internal_id_.find(trade.maker_order_id);
+            if (maker_it != injected_orders_by_internal_id_.end()) {
+                injected_order_fill_handler_(maker_it->second, trade);
+            }
+        }
+    }
+
     void SubmitExternalNewOrder(const ExternalOrderEvent &event) {
         const Side side = event.isAsk ? Side::Sell : Side::Buy;
         const std::uint32_t quantity = ToInternalQuantity(event.size);
         const std::uint64_t timestamp = ToInternalTimestamp(event.ts);
         const SubmittedOrder submitted_order =
             SubmitOrderWithId(side, event.price, quantity, timestamp);
+
+        NotifyInjectedOrderFills(submitted_order.match_result.trades);
 
         if (event.external_order_id.empty() || submitted_order.internal_order_id == 0 ||
             submitted_order.match_result.remaining_quantity != 0) {
@@ -351,7 +371,8 @@ class HyperliquidMatchingEngineAdapter final : public IReplayAdapter {
     ReplayStats stats_{};
     AdapterMetrics metrics_{};
     std::vector<Trade> trades_{};
-    std::unordered_map<std::string, std::uint64_t> external_to_internal_order_ids_{};
+    std::unordered_map<std::string, std::uint64_t> external_to_internal_order_ids_;
+    std::unordered_map<std::uint64_t, InjectedOrder> injected_orders_by_internal_id_;
 
     std::uint64_t nextSyntheticOrderId_{1};
 };
