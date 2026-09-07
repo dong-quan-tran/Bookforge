@@ -1,4 +1,4 @@
-#include <pybind11/pybind11.h>
+﻿#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include "features/FeatureRow.hpp"
@@ -6,8 +6,8 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(bookforge_py, m) {
-    m.doc() = "Python bindings for Bookforge snapshot and feature objects";
+PYBIND11_MODULE(_native, m) {
+    m.doc() = "Native C++ bindings for Bookforge snapshot and feature objects";
 
     py::class_<bookforge::DepthLevelSnapshot>(m, "DepthLevelSnapshot")
         .def(py::init<>())

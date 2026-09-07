@@ -7,6 +7,9 @@ def main() -> None:
     print("Training dataset builder:", bf.build_training_dataset)
     print("Chronological split:", bf.chronological_split)
     print("Kyle's Lambda estimator:", bf.estimate_kyle_lambda)
+    print("DepthLevelSnapshot:", bf.DepthLevelSnapshot)
+    print("BookSnapshot:", bf.BookSnapshot)
+    print("FeatureRow:", bf.FeatureRow)
 
 
 if __name__ == "__main__":

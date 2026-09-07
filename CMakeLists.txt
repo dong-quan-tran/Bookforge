@@ -262,25 +262,32 @@ target_link_libraries(feature_export_main PRIVATE
   bookforge_core
 )
 
-pybind11_add_module(bookforge_py
+pybind11_add_module(bookforge_py_native
   src/python/bookforge_py.cpp
 )
-target_include_directories(bookforge_py PRIVATE
+
+set_target_properties(bookforge_py_native PROPERTIES
+  OUTPUT_NAME "_native"
+)
+
+target_include_directories(bookforge_py_native PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_link_libraries(bookforge_py PRIVATE
+
+target_link_libraries(bookforge_py_native PRIVATE
   bookforge_core
 )
-target_compile_features(bookforge_py PRIVATE cxx_std_20)
 
-set_target_properties(bookforge_py PROPERTIES
+target_compile_features(bookforge_py_native PRIVATE cxx_std_20)
+
+set_target_properties(bookforge_py_native PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${BOOKFORGE_PY_PACKAGE_DIR}
   RUNTIME_OUTPUT_DIRECTORY ${BOOKFORGE_PY_PACKAGE_DIR}
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/python_artifacts
 )
 
 if(WIN32)
-  set_target_properties(bookforge_py PROPERTIES
+  set_target_properties(bookforge_py_native PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY_DEBUG ${BOOKFORGE_PY_PACKAGE_DIR}
     LIBRARY_OUTPUT_DIRECTORY_RELEASE ${BOOKFORGE_PY_PACKAGE_DIR}
     RUNTIME_OUTPUT_DIRECTORY_DEBUG ${BOOKFORGE_PY_PACKAGE_DIR}
@@ -308,4 +315,5 @@ if(BOOKFORGE_ENABLE_BENCHMARKS)
     BOOKFORGE_BENCH_FIXTURE_FILE="${BOOKFORGE_BENCH_REPLAY_FIXTURE}"
   )
 endif()
+
 
