@@ -29,14 +29,19 @@ class ClassificationThresholds:
     Parameters
     ----------
     up : float
-        Minimum log-return to label an observation as 'up' (+1).
+        Minimum log-return to label an observation as up (+1).
     down : float
-        Maximum log-return to label an observation as 'down' (-1).
+        Maximum negative log-return to label an observation as down (-1).
         This should be a positive number; the negative is applied internally.
     """
 
     up: float = 0.0
     down: float = 0.0
+
+
+def _validate_horizon_events(horizon_events: int) -> None:
+    if horizon_events < 1:
+        raise ValueError("horizon_events must be positive")
 
 
 def _future_mid_price(
@@ -46,7 +51,8 @@ def _future_mid_price(
     if "mid_price" not in df.columns:
         raise ValueError("DataFrame must contain 'mid_price' column for label generation")
 
-    # Shift mid_price by horizon_events to align future value with current row
+    _validate_horizon_events(horizon_events)
+
     return df["mid_price"].shift(-horizon_events)
 
 
@@ -54,40 +60,31 @@ def compute_log_return(
     df: pd.DataFrame,
     horizon: HorizonSpec,
 ) -> pd.Series:
-    """Compute short-horizon log-return of mid_price.
+    """Compute short-horizon log return of mid-price.
 
-    Returns
-    -------
-    pandas.Series
-        Log-return over the given event horizon. Trailing rows where the
-        future price is not available will be NaN.
+    Trailing rows where the future price is unavailable are `NaN`.
     """
-    m0 = df["mid_price"]
-    m_future = _future_mid_price(df, horizon.horizon_events)
-
-    return np.log(m_future / m0)
+    future_mid_price = _future_mid_price(df, horizon.horizon_events)
+    return np.log(future_mid_price / df["mid_price"])
 
 
 def classify_return(
     log_ret: pd.Series,
     thresholds: ClassificationThresholds,
 ) -> pd.Series:
-    """Classify log-returns into up/down/flat labels.
+    """Classify log returns into up, down, and flat labels.
 
-    Returns
-    -------
-    pandas.Series
-        Integer labels: +1 (up), -1 (down), 0 (flat).
+    Returns integer labels: +1 for up, -1 for down, and 0 for flat.
     """
+    if thresholds.up < 0.0:
+        raise ValueError("up threshold must be non-negative")
+    if thresholds.down < 0.0:
+        raise ValueError("down threshold must be non-negative")
+
     labels = pd.Series(np.zeros(len(log_ret), dtype=np.int8), index=log_ret.index)
 
-    up_mask = log_ret >= thresholds.up
-    down_mask = log_ret <= -thresholds.down
-
-    labels[up_mask] = 1
-    labels[down_mask] = -1
-
-    # NaN returns get NaN labels to allow filtering
+    labels[log_ret >= thresholds.up] = 1
+    labels[log_ret <= -thresholds.down] = -1
     labels[log_ret.isna()] = np.nan
 
     return labels
@@ -103,31 +100,20 @@ def make_labels(
 ) -> pd.Series:
     """Generate short-horizon labels from a feature DataFrame.
 
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Feature DataFrame containing at least 'mid_price'.
-    horizon_events : int, optional
-        Number of events ahead to use when computing the future mid-price.
-    label_type : {'regression', 'classification'}, optional
-        Type of label to generate.
-    up_threshold : float, optional
-        Minimum log-return for 'up' (+1) classification labels.
-    down_threshold : float, optional
-        Minimum absolute log-return for 'down' (-1) classification labels.
-
-    Returns
-    -------
-    pandas.Series
-        Labels aligned with df.index. Trailing rows will be NaN.
+    The future mid-price is offset by `horizon_events`; trailing observations
+    without a future price receive `NaN` labels.
     """
     horizon = HorizonSpec(horizon_events=horizon_events)
     log_ret = compute_log_return(df, horizon)
 
     if label_type == "regression":
         return log_ret
-    elif label_type == "classification":
-        thresholds = ClassificationThresholds(up=up_threshold, down=down_threshold)
+
+    if label_type == "classification":
+        thresholds = ClassificationThresholds(
+            up=up_threshold,
+            down=down_threshold,
+        )
         return classify_return(log_ret, thresholds)
-    else:
-        raise ValueError(f"Unsupported label_type: {label_type!r}")
+
+    raise ValueError(f"Unsupported label_type: {label_type!r}")
