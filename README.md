@@ -162,8 +162,8 @@ The Python layer includes:
 - Dataset-construction utilities
 - Label generation
 - Baseline XGBoost training
-- Chronological holdout evaluation
-- Walk-forward validation
+- Chronological holdout evaluation with configurable event-horizon purge
+- Expanding-window walk-forward validation with configurable event-horizon purge
 - Feature-importance export
 - Optional SHAP analysis
 - MLflow experiment tracking
