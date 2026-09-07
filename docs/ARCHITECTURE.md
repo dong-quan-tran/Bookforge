@@ -1,8 +1,10 @@
-# Architecture
+﻿# Architecture
 
 ## Overview
 
-Bookforge is a C++20 limit-order-book system centered on a price-time-priority matching engine, with replay, feature extraction, strategy-experiment tooling, benchmarking, and Python bindings layered around the core.
+Bookforge is a C++20 market-replay and limit-order-book system centered on a price-time-priority matching engine. Replay, snapshotting, feature extraction, execution experiments, benchmarks, Python bindings, and an API/dashboard layer are built around that core.
+
+The primary design goal is **correctness and deterministic state transitions first**, with boundaries that support research workflows and performance measurement without placing provider-specific logic inside the matching engine.
 
 The core is responsible for:
 
@@ -11,17 +13,18 @@ The core is responsible for:
 - Enforcing price-time priority
 - Supporting add, cancel, execute, reduce, and replace operations
 - Exposing top-of-book and depth queries
+- Producing deterministic trade results for marketable limit orders
 
-Around that core, the repository adds:
+Around that core, the repository provides:
 
-- Replay ingestion from external CSV data
-- Adapter-driven event translation into the matching engine
+- CSV ingestion and provider-specific normalization
+- Adapter-driven translation from external events to engine actions
+- Deterministic replay with bounds, pacing, and injected-order scheduling
 - Snapshot and feature extraction pipelines
-- Strategy-experiment configuration, injected-order scheduling, result collection, and CSV output
+- Strategy-experiment configuration, execution-quality accounting, and CSV output
 - Benchmark targets for isolated operations and end-to-end replay
-- Python bindings for scripting and downstream tooling
-
-The design goal is correctness first, with a structure that also supports replay, feature extraction, execution experiments, benchmarking, and Python interop.
+- Python bindings and downstream research tooling
+- FastAPI and dashboard surfaces for inspecting exported outputs
 
 ## Architecture diagrams
 
@@ -29,16 +32,17 @@ The design goal is correctness first, with a structure that also supports replay
 
 ```mermaid
 flowchart LR
-    A[Replay CSV / fixture data] --> B[HyperliquidCsvReader]
-    B --> C[vector<ExternalOrderEvent>]
+    A[Historical CSV / synthetic fixture] --> B[HyperliquidCsvReader]
+    B --> C[vector&lt;ExternalOrderEvent&gt;]
     C --> D[ReplayRunner]
     D --> E[IReplayAdapter]
     E --> F[HyperliquidMatchingEngineAdapter]
     F --> G[MatchingEngine]
     G --> H[OrderBook]
-    G --> I[Trades / execution results]
-    G --> J[SnapshotBuilder / FeatureBuilder]
-    J --> K[CSV / snapshot / research outputs]
+    G --> I[Trades and match results]
+    H --> J[SnapshotBuilder and FeatureBuilder]
+    J --> K[CSV / binary snapshots / feature exports]
+    K --> L[Python research / API / dashboard]
 ```
 
 ### Strategy-experiment pipeline
@@ -47,18 +51,20 @@ flowchart LR
 flowchart LR
     A[StrategyExperimentConfig] --> B[MakeInjectedOrder]
     B --> C[InjectedOrder]
-    C --> D[MakeSingleOrderSchedule]
-    D --> E[InjectedOrderSchedule]
+    C --> D[InjectedOrderSchedule]
 
-    F[ExternalOrderEvent vector] --> G[StrategyExperimentRunner]
-    E --> G
-    G --> H[StrategyExperimentAdapter]
-    H --> I[StrategyExperimentResult]
-    I --> J[StrategyExperimentSink]
-    J --> K[StrategyExperimentCsvSink]
-    I --> L[StrategyExperimentCsvWriter]
-    K --> M[CSV experiment output]
-    L --> M
+    E[ExternalOrderEvent vector] --> F[StrategyExperimentRunner]
+    D --> F
+
+    F --> G[ReplayRunner]
+    G --> H[StrategyExperimentReplayAdapter]
+    H --> I[HyperliquidMatchingEngineAdapter]
+    I --> J[MatchingEngine]
+    J --> K[Trade callbacks for injected order]
+    K --> L[StrategyExperimentAdapter]
+    L --> M[StrategyExperimentResult]
+    M --> N[StrategyExperimentCsvWriter]
+    N --> O[CSV experiment output]
 ```
 
 ### Core engine structure
@@ -71,7 +77,7 @@ flowchart TD
     C --> E[FIFO orders at each price]
     D --> F[FIFO orders at each price]
     A --> G[MatchLimitOrder]
-    A --> H[Cancel / reduce / replace flows]
+    A --> H[Cancel / reduce / replace]
     A --> I[Trade generation]
 ```
 
@@ -80,45 +86,50 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[ReplayConfig] --> B[ReplayRunner]
-    C[Event vector] --> B
-    B --> D{Within bounds?}
-    D -- Yes --> E[adapter.OnEvent(events[i])]
-    D -- No --> F[Stop replay]
-    E --> G[Update metrics / counters]
-    G --> H[Next event]
-    H --> D
+    C[ExternalOrderEvent vector] --> B
+    D[InjectedOrderSchedule] --> B
+    B --> E{Within configured bounds?}
+    E -- No --> F[Stop replay]
+    E -- Yes --> G[Optional event-time pacing]
+    G --> H[Dispatch BeforeEvent injected orders]
+    H --> I[adapter.OnEvent events[i]]
+    I --> J[Dispatch AfterEvent injected orders]
+    J --> K[Advance to next event]
+    K --> E
 ```
 
 ## System pipeline
 
-Bookforge is organized as a set of narrow layers around a C++20 matching-engine core.
+Bookforge is organized as narrow layers around the C++20 matching-engine core.
 
 Typical replay data flow:
 
 ```text
-CSV / replay data
+CSV / synthetic data
   -> HyperliquidCsvReader
+  -> ExternalOrderEvent
   -> ReplayRunner
   -> IReplayAdapter
   -> HyperliquidMatchingEngineAdapter
   -> MatchingEngine
   -> OrderBook
-  -> snapshots / features / metrics / benchmarks
+  -> trades / snapshots / features / metrics
 ```
 
 Typical strategy-experiment data flow:
 
 ```text
 StrategyExperimentConfig
-  -> injected-order construction and scheduling
-  -> StrategyExperimentRunner
+  -> injected-order construction
+  -> InjectedOrderSchedule
+  -> ReplayRunner dispatch
+  -> matching-engine trade callback
   -> StrategyExperimentAdapter
   -> StrategyExperimentResult
-  -> CSV writer and/or experiment sink
-  -> experiment output
+  -> CSV output
 ```
 
-This separation keeps data ingestion, replay orchestration, matching logic, experiment configuration, and output formatting independent and testable.
+This separation keeps ingestion, replay orchestration, matching logic, experiment accounting, and output formatting independently testable.
 
 ## Core data structures
 
@@ -128,15 +139,15 @@ This separation keeps data ingestion, replay orchestration, matching logic, expe
 
 It represents:
 
-- `id`: unique order identifier
+- `id`: unique internal order identifier
 - `participant_id`: owner or participant identity
 - `side`: buy or sell
 - `price`: limit price
-- `quantity`: remaining live quantity
-- `timestamp`: arrival time used for priority
-- Self-trade-prevention policy metadata where applicable
+- `quantity`: current remaining live quantity
+- `timestamp`: arrival timestamp used for ordering and replay-time accounting
+- Self-trade-prevention metadata where applicable
 
-An `Order` represents the current remaining quantity, not the original submitted quantity, once partial executions begin.
+After a partial execution, `quantity` represents remaining quantity rather than original submitted quantity.
 
 ### PriceLevel
 
@@ -145,59 +156,59 @@ A `PriceLevel` groups all live orders resting at one exact price on one side of 
 Responsibilities:
 
 - Preserve FIFO order among resting orders at the same price
-- Track aggregate quantity at that price
+- Track aggregate resting quantity at that price
 - Expose front-order execution behavior
-- Support removal when the level becomes empty
+- Remove itself when no live orders remain
 
 Conceptually:
 
-- Bid levels compete by price descending
-- Ask levels compete by price ascending
-- Within one level, queue order is strictly time ordered
+- Bid levels are prioritized by descending price
+- Ask levels are prioritized by ascending price
+- Within a price level, orders execute in FIFO order
 
 ### OrderBook
 
-`OrderBook` owns the two-sided market state:
+`OrderBook` owns two-sided market state:
 
-- Bids
-- Asks
+- Bid price levels
+- Ask price levels
 - Order lookup and index structures
 
 It exposes:
 
 - Order insertion
-- Cancellation by order ID
+- Cancellation by internal order ID
 - Quantity reduction
 - Replacement
 - Top-order execution at a price level
 - Best bid and best ask
 - Mid-price and spread
-- Depth snapshots
+- Depth snapshots and order lookup
 
 ## Matching priority rules
 
-Bookforge follows price-time priority, the standard matching rule for a modern limit-order book.
+Bookforge follows price-time priority.
 
 ### Price priority
 
 Execution priority is determined first by price:
 
-- For bids, higher prices have priority over lower prices
-- For asks, lower prices have priority over higher prices
+- Higher bid prices have priority over lower bid prices
+- Lower ask prices have priority over higher ask prices
 
 An incoming marketable buy order matches the lowest available ask first. An incoming marketable sell order matches the highest available bid first.
 
 ### Time priority
 
-When multiple resting orders exist at the same price, they execute in arrival order: first in, first out.
+At the same price, resting orders execute in arrival order.
 
-Any operation that effectively replaces an order should be treated as a loss of queue priority unless explicitly designed otherwise.
+Queue priority is preserved only when an operation does not create a materially new resting order. Replay lifecycle handling therefore distinguishes reductions from priority-resetting changes.
 
 ## Book invariants
 
 The following invariants should hold after every mutating operation.
 
-1. **Side ordering is valid**
+1. **Valid side ordering**
    - Bid levels are ordered from highest price to lowest price.
    - Ask levels are ordered from lowest price to highest price.
 
@@ -206,210 +217,284 @@ The following invariants should hold after every mutating operation.
    - The oldest live order at that level executes first.
 
 3. **Single live instance per order ID**
-   - An order ID may appear at most once in the live book.
-   - Duplicate insertion must fail without changing state.
+   - An internal order ID appears at most once in the live book.
+   - Duplicate insertion fails without changing state.
 
 4. **Aggregate quantity consistency**
-   - The quantity reported for a price level equals the sum of remaining quantities of all live orders in that level.
+   - Reported price-level quantity equals the sum of remaining quantities of the live orders at that level.
 
 5. **Top-of-book consistency**
-   - `best_bid` is the highest live bid if bids exist.
-   - `best_ask` is the lowest live ask if asks exist.
+   - `best_bid` is the highest live bid when bids exist.
+   - `best_ask` is the lowest live ask when asks exist.
 
 6. **Empty-level cleanup**
-   - If the final order at a price level is canceled or fully executed, that level is removed from its side map.
+   - A price level is removed after its final order is canceled or fully executed.
 
 7. **Order lookup consistency**
-   - Every live order reachable through the global order index exists in exactly one price-level queue.
-   - Every order in a price-level queue is discoverable through the global order index.
+   - Every order in the global order index exists in exactly one price-level queue.
+   - Every order in a price-level queue is discoverable through the order index.
 
 8. **No zero-quantity resting orders**
-   - A live order in the book must have strictly positive remaining quantity.
+   - Every live resting order has strictly positive remaining quantity.
 
-These invariants form the core correctness contract for tests, replay logic, bindings, and downstream analytics.
+These invariants are the correctness contract for tests, replay logic, bindings, snapshots, and downstream analytics.
 
-## Empty book behavior
+## Empty-book behavior
 
-The book handles missing liquidity explicitly.
+Missing liquidity is represented explicitly.
 
-Rules:
+- If no bids exist, `best_bid` is unavailable.
+- If no asks exist, `best_ask` is unavailable.
+- If either side is empty, `mid_price` is unavailable.
+- If either side is empty, `spread` is unavailable.
 
-- If no bids exist, `best_bid` is unavailable
-- If no asks exist, `best_ask` is unavailable
-- If either side is empty, `mid_price` is unavailable
-- If either side is empty, `spread` is unavailable
+The book does not invent synthetic prices for one-sided or empty states.
 
-This avoids inventing synthetic prices and keeps analytics behavior explicit.
+## Ownership and lifecycle
 
-## Ownership and lifetime rules
-
-Order ownership is intentionally simple and explicit.
+Order ownership is intentionally explicit.
 
 ### Live lifetime
 
-An order is live only if:
+An order is live only when both conditions hold:
 
-- It exists in the order lookup or index
-- It is present in exactly one resting queue at one price level
+- It is reachable through the order lookup/index.
+- It is present in exactly one resting queue at one price level.
 
-### Removal rules
+### Removal
 
-An order stops being live when:
+An order ceases to be live when it is:
 
-- It is canceled
-- It is fully executed
-- It is replaced by removing the old state and inserting a new resting instance
+- Canceled
+- Fully executed
+- Replaced by removal of its current resting state and insertion of a new resting instance
 
-### Partial execution rules
+### Partial execution
 
-If an order is partially executed:
+For a partial execution:
 
-- The same logical order remains live
-- Only its remaining quantity changes
-- Queue priority is preserved unless the operation is a replace
+- The logical order remains live.
+- Only remaining quantity changes.
+- Existing queue priority is preserved.
 
-### Replace rules
+### Replace semantics
 
-A replace operation uses cancel-and-reinsert semantics for priority:
+Replace behavior reflects whether queue priority should be preserved:
 
-- Changing price loses priority
-- Replacing at the same price also loses priority in the current design
-- The replaced order no longer occupies its prior queue position
+- A same-price quantity reduction preserves FIFO position.
+- An unchanged same-price quantity is a no-op.
+- A price change requeues the order and loses FIFO priority.
+- A quantity increase requeues the order and loses FIFO priority.
+
+This models the common distinction between reducing displayed size and materially changing an order’s execution priority.
 
 ## Replay and adapters
 
-Replay support is a first-class part of the architecture.
+Replay is a first-class layer rather than a feature embedded in the matching engine.
+
+### ExternalOrderEvent
+
+`ExternalOrderEvent` is the provider-neutral event model between raw input and replay adapters.
+
+It carries normalized fields required by the replay path, including:
+
+- Source timestamp
+- Symbol when available
+- Side, price, and quantity
+- Event type
+- Optional external order ID
+- Optional explicit fill quantity
+
+Provider-specific field names and status labels are normalized before the event reaches the matching engine.
 
 ### HyperliquidCsvReader
 
-`HyperliquidCsvReader` loads external event data from CSV into `ExternalOrderEvent` records. It is separate from the matching engine so replay fixtures, tests, benchmarks, feature export, and strategy experiments can share one input layer.
+`HyperliquidCsvReader` loads Hyperliquid-style CSV data into `ExternalOrderEvent` records.
+
+It is responsible for:
+
+- Parsing expected CSV fields
+- Tolerating a UTF-8 BOM before a header
+- Mapping status fields to external event types
+- Preserving optional external IDs from `order_id`, `orderId`, or `oid`
+- Preserving optional explicit fill size from `fill_size`, `fillSize`, or `fillSz`
+- Parsing timestamps as UTC Unix epoch nanoseconds, with optional fractional precision through nanoseconds
+- Reporting malformed records through strict or non-strict error-handling modes
+
+The reader remains separate from the matching engine so fixtures, tests, benchmarks, feature export, and experiments share one input normalization path.
 
 ### ReplayRunner
 
-`ReplayRunner` owns event iteration and replay control. It supports configurable replay bounds and logging controls, including:
+`ReplayRunner` owns deterministic event iteration and injected-order dispatch.
 
-- `start_offset` for skipping the first N events
-- `max_events` for bounding replay length
+It supports:
+
+- `start_offset` for skipping an initial event prefix
+- `max_events` for bounded replay
 - Progress and summary logging controls
+- Unpaced replay for maximum throughput
+- Event-time pacing using scaled non-negative deltas between consecutive processed event timestamps
+- Dispatching scheduled injected orders immediately before or after a configured replay event
+- Assigning the current event’s replay timestamp to dispatched injected orders
+
+Pacing does not change event ordering. The ordering for a processed event is:
+
+```text
+optional pacing
+-> BeforeEvent injected orders
+-> external event
+-> AfterEvent injected orders
+```
 
 ### IReplayAdapter
 
-`IReplayAdapter` decouples replay input from book execution. This allows the same replay driver to target the matching engine, metrics collection, or future alternative sinks without changing replay orchestration.
+`IReplayAdapter` decouples replay orchestration from a particular destination.
+
+The interface receives:
+
+- External replay events through `OnEvent`
+- Scheduled injected orders through `OnInjectedOrder`
+- Adapter metrics through `Metrics`
+
+This allows the same `ReplayRunner` to drive matching-engine adapters, strategy experiments, recording adapters, and future replay consumers.
 
 ### HyperliquidMatchingEngineAdapter
 
-`HyperliquidMatchingEngineAdapter` translates external events into matching-engine actions. New-order events are submitted into the book, while other event types are tracked for replay accounting and adapter metrics.
+`HyperliquidMatchingEngineAdapter` converts normalized external events into matching-engine actions while keeping provider-specific semantics out of the core.
 
-This keeps exchange-specific input semantics out of the core matching engine.
+For supported lifecycle data:
+
+- `New` submits a passive limit order to the engine.
+- A resting external order with an explicit external ID is mapped to its generated internal ID.
+- `Cancel` removes the mapped resting order when the external ID is present and known.
+- `Fill` reduces or removes the mapped resting order when both external ID and explicit fill size are available.
+- `Replace` preserves FIFO for a same-price quantity reduction and requeues for price changes or quantity increases.
+- `Reject`, `Trigger`, and unsupported/incomplete events are tracked through adapter metrics without corrupting book state.
+
+The adapter does not infer order identity from price, size, timestamp, or side. Events lacking the explicit fields required for stateful linkage are tracked as unsupported or ignored as appropriate.
+
+### Multi-symbol replay
+
+Symbol-bearing input is routed to isolated matching engines and adapters.
+
+This provides:
+
+- One independent order book per symbol
+- No cross-symbol matching
+- Deterministic sorted summaries
+- Optional pre-replay symbol filtering
+- Legacy fallback routing for symbol-less CSV rows
 
 ## Strategy experiments
 
-The strategy-experiment subsystem is an incremental execution-analysis layer built around the replay architecture.
-
-Its purpose is to make it possible to define an injected order, replay historical event flow, and collect a consistent result record suitable for comparing strategy configurations.
+The strategy-experiment subsystem evaluates a scheduled injected limit order against replayed liquidity.
 
 ### StrategyExperimentConfig
 
-`StrategyExperimentConfig` defines a single experiment run.
+`StrategyExperimentConfig` defines one experiment:
 
-It includes:
-
-- `mode`: passive or aggressive
+- `mode`: passive or aggressive experiment label
 - `csv_path`: source replay CSV path
-- `entry_offset`: replay position at which the experiment should enter
+- `entry_offset`: replay position at which to inject
 - `is_buy`: buy or sell side
-- `limit_price`: limit price for the injected order
-- `quantity`: requested order quantity
-- `timing`: placement relative to an event, using `InjectedOrderTiming`
+- `limit_price`: injected limit price
+- `quantity`: requested quantity
+- `timing`: placement relative to the selected event
+
+The current `mode` field is recorded as experiment metadata. Whether an injected order rests or crosses available liquidity is determined by side and limit price relative to book state. A distinct mode-specific execution-policy abstraction is future work.
 
 ### Injected orders and schedules
 
-`MakeInjectedOrder` converts an experiment configuration into an `InjectedOrder`.
+`MakeInjectedOrder` converts configuration into an `InjectedOrder`.
 
-`MakeSingleOrderSchedule` wraps that order in an `InjectedOrderSchedule`, which provides an explicit boundary between experiment definition and replay-time order injection.
+`MakeSingleOrderSchedule` places that order in an `InjectedOrderSchedule`, creating a clean boundary between experiment definition and replay-time dispatch.
 
-This design leaves room for future multi-order schedules, cancellations, amendments, latency models, and strategy state machines without requiring changes to the base replay loop.
+The schedule abstraction supports future extensions without changing the replay loop, including:
+
+- Multi-order schedules
+- Scheduled cancel/replace behavior
+- Latency models
+- State-machine strategies
+- Participation or execution schedules
 
 ### StrategyExperimentRunner
 
-`StrategyExperimentRunner` coordinates an individual experiment run.
+`StrategyExperimentRunner` coordinates a single run.
 
-Its responsibilities are to:
+It:
 
-- Receive replay configuration and experiment configuration
-- Construct the experiment adapter
-- Feed replay events through the adapter
-- Return a `StrategyExperimentResult`
+- Creates a fresh matching engine and matching adapter
+- Constructs an experiment adapter
+- Schedules the configured injected order
+- Replays the immutable event vector through `ReplayRunner`
+- Links matching-engine trades involving the injected order back to experiment accounting
+- Returns one `StrategyExperimentResult`
 
-The runner is intentionally narrow. It should coordinate the experiment without duplicating matching-engine behavior or formatting output.
+The runner coordinates components without duplicating matching or output formatting logic.
 
 ### StrategyExperimentAdapter
 
-`StrategyExperimentAdapter` implements the replay-adapter boundary for an experiment.
+`StrategyExperimentAdapter` owns result accounting at the boundary between replay execution and experiment reporting.
 
-It currently:
+It:
 
-- Initializes a result record from experiment configuration
-- Receives replay events through `OnEvent`
-- Receives injected-order callbacks through `OnInjectedOrder`
-- Tracks adapter metrics
-- Captures the presence of decision-time metrics during replay
-- Provides an `OnFill` hook for future matching-engine fill linkage
-- Returns a copy of the current `StrategyExperimentResult`
-
-The adapter is the correct location for execution-quality accounting because it sits at the boundary between replay behavior and experiment reporting.
+- Initializes result state from experiment configuration
+- Captures top-of-book state immediately before the target injected order is submitted
+- Records the injection timestamp assigned by replay dispatch
+- Receives injected-order trade callbacks
+- Accumulates filled quantity and remaining quantity
+- Calculates weighted average execution price
+- Records replay-time first-fill and full-fill latency
+- Derives fill rate and sign-aware implementation shortfall
+- Returns a stable result copy
 
 ### StrategyExperimentResult
 
 `StrategyExperimentResult` is the stable output schema for one experiment.
 
-It contains:
+It includes:
 
-- Strategy configuration fields: `mode`, `entry_offset`, `is_buy`, and `limit_price`
-- Quantity fields: `requested_qty`, `filled_qty`, and `remaining_qty`
-- Fill-quality fields: `fill_rate` and `avg_execution_price`
-- Decision-time fields: `decision_mid_price`, `decision_spread`, and `has_decision_metrics`
-- Cost field: `implementation_shortfall_bps`
-- Timing fields: `time_to_first_fill_us` and `time_to_full_fill_us`
+- Configuration: `mode`, `entry_offset`, `is_buy`, `limit_price`
+- Quantity: `requested_qty`, `filled_qty`, `remaining_qty`
+- Execution quality: `fill_rate`, `avg_execution_price`
+- Decision state: `decision_best_bid`, `decision_best_ask`, `decision_mid_price`, `decision_spread`, `has_decision_metrics`
+- Cost: `implementation_shortfall_bps`
+- Timing: `time_to_first_fill_us`, `time_to_full_fill_us`
 
-The schema is designed so output consumers can compare passive and aggressive runs without depending on replay internals.
+Timing is measured from injected-order submission to the corresponding fill milestone using normalized replay timestamps. It is replay-time accounting, not live exchange-latency measurement.
 
 ### Experiment outputs
 
-`StrategyExperimentCsvWriter` serializes one or more result records to CSV.
+`StrategyExperimentCsvWriter` serializes result records into stable row-oriented CSV output.
 
-The writer produces a stable row-oriented output that includes strategy mode, side, fill state, decision metrics, shortfall, and time-to-fill fields. CSV output is intentionally separate from experiment execution so analysis tooling can evolve independently from replay and matching behavior.
+`StrategyExperimentSink` and `StrategyExperimentCsvSink` provide an additional output abstraction so future destinations—such as a database, dashboard, or event stream—can be added without coupling strategy execution to one storage format.
 
-`StrategyExperimentSink` and `StrategyExperimentCsvSink` provide an additional output abstraction for experiment results. This allows future output destinations, such as databases, dashboards, or structured event streams, without coupling the runner or adapter to one storage format.
+### Current experiment limitations
 
-### Current limitations
+The experiment layer intentionally does not claim to model information it does not observe.
 
-The strategy-experiment subsystem is deliberately incomplete rather than pretending to model execution it does not yet observe.
+Current limits include:
 
-The current architecture provides tested configuration, scheduling, runner, adapter, result, CSV writer, and sink boundaries. The following areas are still evolving:
-
-- Linking actual matching-engine fills back to the injected order
-- Capturing real decision-time mid-price and spread from book state
-- Calculating timestamp-based time-to-first-fill and time-to-full-fill
-- Computing sign-aware implementation shortfall from decision and execution prices
-- Modeling queue position, latency, partial fills, cancellations, and exchange-specific lifecycle details
-
-These limitations are explicit so experiment output is interpreted as scaffolding until full fill linkage is implemented.
+- No source-derived queue-position reconstruction
+- No source-derived queue-ahead volume
+- No explicit venue latency, network latency, or exchange matching delay model
+- No strategy-specific market-order or execution-schedule policy beyond injected limit-order configuration
+- Dependence on source data containing enough lifecycle detail to reconstruct resting liquidity faithfully
 
 ## Derived market state
 
-The book exposes several derived values:
+The book exposes derived values:
 
-- **Best bid**: highest live bid price
-- **Best ask**: lowest live ask price
-- **Mid-price**: `(best_bid + best_ask) / 2`
-- **Spread**: `best_ask - best_bid`
+- **Best bid:** highest live bid price
+- **Best ask:** lowest live ask price
+- **Mid-price:** \((best\_bid + best\_ask) / 2\)
+- **Spread:** \(best\_ask - best\_bid\)
 
-These values are defined only when both sides of the book are non-empty.
+Mid-price and spread are available only when both sides are populated.
 
-## Feature extraction and snapshots
+## Snapshots and features
 
-Feature and snapshot components consume state derived from the replay and matching-engine path.
+Snapshot and feature components consume state derived from the replay and matching-engine path.
 
 ### Snapshots
 
@@ -417,10 +502,10 @@ Snapshot components capture book state for:
 
 - Reproducibility
 - Checkpoint validation
-- Regression testing
-- Binary or serialized downstream artifacts
+- Regression tests
+- CSV and binary downstream artifacts
 
-The snapshot builder, serializers, deserializers, and comparator are separate from the matching engine so persistence concerns do not complicate matching logic.
+The snapshot builder, serializers, deserializers, and comparator remain outside matching logic so persistence concerns do not complicate book operations.
 
 ### Features
 
@@ -431,17 +516,17 @@ The feature pipeline exports market-microstructure features including:
 - Bid and ask depth
 - Depth imbalance
 - Order-flow imbalance
-- Rolling feature variants
+- Rolling liquidity and volatility context
 
-Feature generation is downstream of replay and book-state reconstruction. This preserves one authoritative matching and book-state implementation.
+Feature generation is downstream of replay and book reconstruction so all consumers share one authoritative market-state implementation.
 
-## Benchmarking
+## Benchmarks
 
-Bookforge includes benchmark targets for isolated operations and replay throughput.
+Bookforge includes focused benchmarks and replay throughput benchmarks.
 
 ### benchmark_order_book
 
-`benchmark_order_book` measures focused matching-engine operations such as:
+`benchmark_order_book` measures hot-path operations such as:
 
 - Add order
 - Cancel order
@@ -450,64 +535,57 @@ Bookforge includes benchmark targets for isolated operations and replay throughp
 - Replace at same price
 - Replace at new price
 
-This benchmark is intended to catch regressions in order-book hot paths.
+These measurements are used to detect performance regressions, not to make exchange-grade latency claims.
 
 ### benchmark_replay
 
-`benchmark_replay` measures replay throughput over a loaded fixture using the CSV reader, replay runner, and replay adapter stack.
+`benchmark_replay` measures end-to-end replay throughput over a loaded synthetic fixture through the CSV reader, replay runner, and adapter stack.
 
-The replay benchmark uses a larger synthetic fixture so measurements are less dominated by benchmark setup overhead and better represent end-to-end event processing.
+The fixture is intentionally larger than a smoke test so results are less dominated by setup overhead. Benchmark interpretation, host details, build configuration, and methodology belong in `docs/BENCHMARKS.md`.
 
-## Python bindings
+## Python bindings and research
 
-The Python extension is a thin interface over the C++ core.
+The Python extension is a thin interface over selected C++ core functionality.
 
-The design goal is to keep matching, replay, and performance-sensitive logic in C++, while exposing selected functionality to Python for:
+The design keeps matching, replay, and performance-sensitive state transitions in C++, while exposing outputs and selected controls to Python for:
 
 - Scripting
-- Experiments
-- Analysis workflows
-- Downstream tooling
+- Dataset construction
+- Feature analysis
+- Modeling experiments
+- API-facing workflows
 
-The C++ implementation remains the authoritative source of behavior. Python bindings should expose functionality rather than duplicate matching logic.
+Python does not duplicate matching semantics. The C++ implementation remains the authoritative source of book and replay behavior.
 
 ## Engineering controls
 
-The repository includes engineering controls intended to keep the project maintainable and CI-friendly.
+Bookforge includes controls intended to keep changes reproducible and cross-platform.
 
 Current controls include:
 
-- GitHub Actions CI
-- `clang-format` enforcement for C++ sources
-- Python linting and formatting checks
-- CMake target wiring for tests and executables
-- `.gitattributes` handling for line-ending consistency
-- A PowerShell development helper that formats selected files, builds, and runs tests
+- GitHub Actions CI using an Ubuntu Release build
+- CMake build targets for libraries, executables, tests, bindings, and optional benchmarks
+- GoogleTest discovery through CTest
+- `clang-format` enforcement for C++ source, header, test, and benchmark files
+- Ruff linting and formatting checks for Python
+- Pytest coverage for Python utilities and API behavior
+- Python source compilation checks
+- `.gitattributes` line-ending normalization
+- A PowerShell development helper that formats C++, builds, runs CTest, runs Ruff, runs pytest, and compiles Python sources
+- Optional benchmark construction for deliberate local performance runs
 
-These controls support the broader goal of moving the repository from "works" to "serious project."
-
-## Development workflow controls
-
-The repository uses workflow controls to keep CI and local development aligned:
-
-- `.gitattributes` normalizes line endings so Git does not introduce noisy CRLF/LF diffs.
-- C++ formatting is enforced with `clang-format` and should be run locally before commit.
-- Formatting changes are best committed separately from functional changes.
-- The local development helper can run formatting, build, and tests in one step.
-- New replay, experiment, or output behavior should be covered by focused GoogleTest cases before integration-level changes.
-
-These controls reduce repeated lint failures and keep the repository easier to review across Windows and Unix environments.
+Functional changes should include focused tests before integration-level changes. Formatting-only changes should be isolated from functional changes where practical.
 
 ## Why this structure
 
-This design is a good fit for Bookforge because it supports:
+This architecture supports:
 
 - Deterministic testing
-- Realistic price-time-priority behavior
-- Clean replay integration
-- Feature extraction such as spread, imbalance, and order-flow metrics
+- Realistic price-time-priority state transitions
+- Clean provider-specific replay integration
+- Explicit handling of incomplete external lifecycle data
+- Feature extraction from one authoritative book-state path
 - Incremental execution-experiment development without contaminating core matching logic
-- Benchmark-driven performance tracking
-- Python-based experimentation without moving core logic out of C++
-
-It is also interview-friendly because the invariants, boundaries, and trade-offs can be explained clearly without hiding behind framework complexity.
+- Benchmark-driven regression tracking
+- Python-based research without moving performance-sensitive logic out of C++
+- Clear tradeoff discussion in systems, quant SWE, and ML engineering interviews
