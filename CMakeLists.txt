@@ -249,6 +249,24 @@ if(WIN32)
       -OutputDirectory
       "${CMAKE_CURRENT_BINARY_DIR}/cli_integration_output"
   )
+  add_test(
+    NAME feature_export_cli_integration
+    COMMAND
+      ${CMAKE_COMMAND} -E env
+      "BOOKFORGE_TEST_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/feature_export_cli_integration_output"
+      powershell
+      -NoProfile
+      -ExecutionPolicy
+      Bypass
+      -File
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_feature_export_cli.ps1"
+      -FeatureExportExecutable
+      "$<TARGET_FILE:feature_export_main>"
+      -FixturePath
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/hyperliquid_multi_symbol_fixture.csv"
+      -OutputDirectory
+      "${CMAKE_CURRENT_BINARY_DIR}/feature_export_cli_integration_output"
+  )
 endif()
 
 add_executable(feature_export_main

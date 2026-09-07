@@ -13,6 +13,7 @@
 #include "features/FeatureCsvWriter.hpp"
 #include "features/OfiFeatureBuilder.hpp"
 #include "features/RollingFeatureBuilder.hpp"
+#include "replay/SymbolReplayFilter.hpp"
 #include "snapshot/SnapshotBuilder.hpp"
 
 using namespace bookforge;
@@ -23,6 +24,7 @@ struct ExportConfig {
     std::string input_path = "data/processed/hyperliquid_sample.csv";
     std::string output_path = "output/features.csv";
     std::string symbol = "BTCUSDT.P";
+    std::string fallback_symbol = "BTCUSDT.P";
     std::size_t snapshot_depth = 10;
     std::size_t imbalance_depth = 10;
     std::size_t ofi_depth = 10;
@@ -35,22 +37,24 @@ struct ExportConfig {
 };
 
 void PrintUsage(const char *program_name) {
-    std::cout << "Usage: " << program_name << " [options]\n"
-              << "\n"
-              << "Options:\n"
-              << "  --input PATH              Input Hyperliquid CSV path\n"
-              << "  --output PATH             Output feature CSV path\n"
-              << "  --symbol SYMBOL           Symbol name to stamp into snapshots/features\n"
-              << "  --snapshot-depth N        Depth levels captured in snapshots\n"
-              << "  --imbalance-depth N       Depth levels used for depth imbalance features\n"
-              << "  --ofi-depth N             Depth levels used for OFI features\n"
-              << "  --rolling-window N        Rolling window size in rows\n"
-              << "  --max-events N            Maximum events to process (0 = all)\n"
-              << "  --start-offset N          Event offset to start from\n"
-              << "  --log-every N             Progress log frequency\n"
-              << "  --strict                  Enable strict CSV parsing mode\n"
-              << "  --no-log-errors           Disable CSV parse error logging\n"
-              << "  --help                    Show this help text\n";
+    std::cout
+        << "Usage: " << program_name << " [options]\n"
+        << "\n"
+        << "Options:\n"
+        << "  --input PATH              Input Hyperliquid CSV path\n"
+        << "  --output PATH             Output feature CSV path\n"
+        << "  --symbol SYMBOL           Replay only this symbol; empty means all source events\n"
+        << "  --fallback-symbol SYMBOL  Symbol assigned to source rows without a symbol column\n"
+        << "  --snapshot-depth N        Depth levels captured in snapshots\n"
+        << "  --imbalance-depth N       Depth levels used for depth imbalance features\n"
+        << "  --ofi-depth N             Depth levels used for OFI features\n"
+        << "  --rolling-window N        Rolling window size in rows\n"
+        << "  --max-events N            Maximum filtered events to process (0 = all)\n"
+        << "  --start-offset N          Filtered-event offset to start from\n"
+        << "  --log-every N             Progress log frequency\n"
+        << "  --strict                  Enable strict CSV parsing mode\n"
+        << "  --no-log-errors           Disable CSV parse error logging\n"
+        << "  --help                    Show this help text\n";
 }
 
 ExportConfig ParseArgs(int argc, char **argv) {
@@ -63,6 +67,7 @@ ExportConfig ParseArgs(int argc, char **argv) {
             if (i + 1 >= argc) {
                 throw std::runtime_error("missing value for argument: " + name);
             }
+
             return argv[++i];
         };
 
@@ -72,6 +77,8 @@ ExportConfig ParseArgs(int argc, char **argv) {
             cfg.output_path = require_value(arg);
         } else if (arg == "--symbol") {
             cfg.symbol = require_value(arg);
+        } else if (arg == "--fallback-symbol") {
+            cfg.fallback_symbol = require_value(arg);
         } else if (arg == "--snapshot-depth") {
             cfg.snapshot_depth = static_cast<std::size_t>(std::stoull(require_value(arg)));
         } else if (arg == "--imbalance-depth") {
@@ -108,7 +115,17 @@ int main(int argc, char **argv) {
         const ExportConfig cfg = ParseArgs(argc, argv);
 
         HyperliquidCsvReader reader(cfg.input_path);
-        const auto events = reader.read_all(cfg.strict_mode, cfg.log_errors);
+        const auto input_events = reader.read_all(cfg.strict_mode, cfg.log_errors);
+
+        const auto events =
+            FilterReplayEventsBySymbol(input_events, cfg.symbol, cfg.fallback_symbol);
+
+        if (!cfg.symbol.empty()) {
+            std::cout << "[feature_export] symbol_filter=" << cfg.symbol << '\n';
+        }
+
+        std::cout << "[feature_export] input_events=" << input_events.size() << '\n'
+                  << "[feature_export] filtered_events=" << events.size() << '\n';
 
         MatchingEngine engine;
         HyperliquidMatchingEngineAdapter adapter(engine);
@@ -131,7 +148,7 @@ int main(int argc, char **argv) {
             ++processed;
 
             SnapshotBuildContext ctx;
-            ctx.symbol = cfg.symbol;
+            ctx.symbol = cfg.symbol.empty() ? ev.symbol : cfg.symbol;
             ctx.replay_event_index = static_cast<std::uint64_t>(processed);
             ctx.replay_timestamp_ns = static_cast<std::uint64_t>(ev.ts.count());
 
@@ -162,12 +179,12 @@ int main(int argc, char **argv) {
 
         FeatureCsvWriter::Write(cfg.output_path, rows);
 
-        std::cout << "[feature_export] wrote_rows=" << rows.size() << "\n"
-                  << "[feature_export] output=" << cfg.output_path << "\n";
+        std::cout << "[feature_export] wrote_rows=" << rows.size() << '\n'
+                  << "[feature_export] output=" << cfg.output_path << '\n';
 
         return 0;
     } catch (const std::exception &ex) {
-        std::cerr << "[feature_export] failed: " << ex.what() << "\n";
+        std::cerr << "[feature_export] failed: " << ex.what() << '\n';
         return 1;
     }
 }
