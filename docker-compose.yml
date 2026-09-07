@@ -1,14 +1,25 @@
-version: "3.9"
-
-services:
+﻿services:
   api:
     build:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "8000:8000"
+      - "8010:8000"
     volumes:
       - ./output:/app/output:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health', timeout=2).read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
   dashboard:
     build:
@@ -17,6 +28,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_BASE=http://localhost:8010
+      VITE_API_BASE: http://localhost:8010
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    restart: unless-stopped

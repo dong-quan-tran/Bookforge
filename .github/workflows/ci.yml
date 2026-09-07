@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -9,9 +9,15 @@ on:
       - "feature/**"
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
+    name: Build and test
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: python
 
     steps:
       - name: Checkout
@@ -21,17 +27,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
 
       - name: Set up CMake
         uses: jwlawson/actions-setup-cmake@v2
 
       - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DBOOKFORGE_ENABLE_BENCHMARKS=OFF
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -40,39 +51,43 @@ jobs:
         run: ctest --test-dir build -C Release --output-on-failure
 
       - name: Run Python tests
-        env:
-          PYTHONPATH: python
-        run: pytest tests/python -q
+        run: python -m pytest tests/python -q
+
+      - name: Compile Python sources
+        run: python -m compileall -q python
 
   lint:
+    name: Lint and formatting
     runs-on: ubuntu-latest
-  
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-  
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-  
+          cache: pip
+          cache-dependency-path: requirements.txt
+
       - name: Install clang-format 19
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-format-19
-  
+
       - name: Install Ruff
         run: |
           python -m pip install --upgrade pip
-          pip install ruff
-  
-      - name: Run Ruff
-        run: ruff check .
-  
+          python -m pip install ruff
+
+      - name: Run Ruff lint
+        run: python -m ruff check .
+
       - name: Check Python formatting
-        run: ruff format --check .
-  
+        run: python -m ruff format --check .
+
       - name: Check C++ formatting
         run: |
-          find src tests bench -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" \) -print0 | \
+          find src tests bench -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" \) -print0 |
           xargs -0 clang-format-19 --dry-run --Werror -style=file

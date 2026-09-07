@@ -720,7 +720,7 @@ For a one-command local check:
 .\scripts\dev-check.ps1
 ```
 
-The helper formats C++ source/header files under `src`, `tests`, and `bench`, then runs the CMake build and CTest suite.
+The helper formats C++ source, header, test, and benchmark files; configures and builds the C++ project; runs CTest; runs Ruff lint and formatting checks; runs Python tests; and compiles Python source files. By default, it disables benchmark target construction to keep routine validation fast.
 
 The repository also uses `.gitattributes` to keep line endings consistent across platforms.
 
