@@ -2,119 +2,82 @@
 
 ## Purpose
 
-This document records the current benchmark coverage in Bookforge and provides a reproducible baseline for future performance comparisons.
+Bookforge uses Google Benchmark to track performance regressions in the C++20 order-book core and replay path.
 
-The goal is not to claim universal performance numbers. The goal is to:
-- track regressions,
-- keep benchmark scope explicit,
-- and make current results easy to discuss during review or interviews.
+These results are local Release-build baselines, not universal latency claims or production-exchange guarantees. Compare results only on equivalent hardware, compiler, fixture, and build settings.
 
-## Benchmark targets
+## Environment
 
-Bookforge currently includes two benchmark executables:
+| Property | Value |
+|---|---|
+| Run date | 2026-09-08 |
+| Operating system | Windows development host |
+| Logical CPUs reported by Google Benchmark | 20 |
+| Reported CPU frequency | 2.688 GHz |
+| L1 data cache | 48 KiB × 10 |
+| L2 unified cache | 1,280 KiB × 10 |
+| L3 unified cache | 24 MiB × 1 |
+| Build mode | Release |
+| Repetitions | 5 |
+| Aggregate report | mean, median, standard deviation, coefficient of variation |
 
-- `benchmark_order_book`
-- `benchmark_replay`
+## Replay throughput
 
-These serve different purposes:
-- `benchmark_order_book` measures isolated hot-path operations in the core order book and matching engine.
-- `benchmark_replay` measures end-to-end replay throughput across CSV loading, replay iteration, adapter translation, and matching-engine submission.
+`benchmark_replay` loads a deterministic 10,000-event synthetic fixture once, then measures in-memory replay through:
 
-## Current benchmark coverage
-
-### `benchmark_order_book`
-
-This benchmark covers the following operations:
-
-- `AddOrder`
-- `CancelOrder`
-- `ExecuteTopOrderPartial`
-- `ExecuteTopOrderFull`
-- `ReduceOrderQuantity`
-- `ReplaceOrderSamePrice`
-- `ReplaceOrderNewPrice`
-
-This target is intended to detect regressions in the most performance-sensitive core order-book paths.
-
-### `benchmark_replay`
-
-This benchmark covers replay throughput over a loaded fixture using the replay pipeline:
-
-`HyperliquidCsvReader -> ReplayRunner -> IReplayAdapter -> HyperliquidMatchingEngineAdapter -> MatchingEngine`
-
-This target is intended as an end-to-end replay benchmark rather than an isolated microbenchmark.
-
-## Current baseline results
-
-### Replay throughput baseline
-
-The current replay benchmark uses a larger synthetic fixture so that measured throughput is dominated less by benchmark harness overhead and more by actual replay work.
-
-| Benchmark | Fixture | Build | Observed result |
-|---|---|---|---|
-| `benchmark_replay` | Large synthetic CSV fixture | Release | roughly 4.4M-4.7M events/sec on Windows |
-
-These numbers should be treated as local baseline measurements, not as universal performance claims.
-
-### Order book benchmark baseline
-
-The order book benchmark is currently used mainly as an operation-level regression check.
-
-| Benchmark | Scope | Current interpretation |
-|---|---|---|
-| `benchmark_order_book` | Hot-path order-book operations | Stable and believable microbenchmark coverage for core operations |
-
-If desired, this section can later be expanded with per-operation tables copied directly from benchmark output.
-
-## Reproducing results
-
-### Build benchmarks
-
-#### Windows PowerShell
-```powershell
-cmake --build build --config Release --parallel
+```text
+ReplayRunner
+-> HyperliquidMatchingEngineAdapter
+-> MatchingEngine
+-> OrderBook
 ```
 
-### Run order book benchmark
+The fixture contains 8,334 `New` events and 1,666 rejected events. CSV parsing/loading occurs before the timed iterations, so this benchmark measures replay throughput rather than end-to-end file-ingestion throughput.
 
-#### Windows PowerShell
+| Benchmark | Fixture events | Mean throughput | Median throughput | Throughput CV |
+|---|---:|---:|---:|---:|
+| `BM_InMemoryReplayThroughput` | 10,000 | 4.4788M events/s | 4.4843M events/s | 1.20% |
+
+## Order-book workloads
+
+`benchmark_order_book` exercises price-time-priority book operations. The workload benchmarks include the operations represented by their names; they are more representative for headline throughput than isolated-operation benchmarks because they process sustained batches.
+
+| Benchmark | Workload size | Mean throughput | Median throughput | Throughput CV |
+|---|---:|---:|---:|---:|
+| `BM_AddOrderWorkload` | 100,000 orders | 3.2522M inserts/s | 3.2628M inserts/s | 2.93% |
+| `BM_AddThenCancelWorkload` | 100,000 adds + 100,000 cancels | 5.5811M operations/s | 5.5273M operations/s | 2.63% |
+| `BM_AddThenCancelWorkload` | 10,000 adds + 10,000 cancels | 5.6534M operations/s | 5.6765M operations/s | 1.82% |
+
+The repository also includes isolated benchmarks for add, cancel, partial/full execution, quantity reduction, and requeue-at-new-price behavior across 1,000, 10,000, and 100,000 pre-populated orders.
+
+## Reproduction
+
+Configure a benchmark-enabled build:
+
 ```powershell
-.\build\bench\Release\benchmark_order_book.exe
+cmake -S . -B build-bench -DBOOKFORGE_ENABLE_BENCHMARKS=ON
+cmake --build build-bench --config Release --target benchmark_order_book benchmark_replay
 ```
 
-### Run replay benchmark
+Run five aggregate repetitions:
 
-#### Windows PowerShell
 ```powershell
-.\build\bench\Release\benchmark_replay.exe
+.\build-bench\bench\Release\benchmark_order_book.exe `
+    --benchmark_format=console `
+    --benchmark_repetitions=5 `
+    --benchmark_report_aggregates_only=true
+
+.\build-bench\bench\Release\benchmark_replay.exe `
+    --benchmark_format=console `
+    --benchmark_repetitions=5 `
+    --benchmark_report_aggregates_only=true
 ```
 
-## Fixture generation
+If using a different CMake generator, locate the generated executables and adjust the path accordingly.
 
-The replay benchmark depends on a large replay-compatible fixture.
+## Interpretation
 
-Generate or refresh the current large fixture with:
-
-#### Windows PowerShell
-```powershell
-python tools\generate_replay_fixture.py --events 10000 --base-price 100.00 --output tests\fixtures\hyperliquid_replay_fixture_large.csv
-```
-
-## Notes on interpretation
-
-Benchmark results in this repo should be read with a few constraints in mind:
-
-- Local machine, compiler, and build settings affect absolute numbers.
-- The replay benchmark measures the current adapter behavior, and today real matching work is concentrated in `EventType::New`.
-- The replay benchmark is most useful as a relative baseline for future changes.
-- The order book benchmark is more useful for hot-path regression tracking than for external headline numbers.
-
-## When to update this document
-
-Update this file when:
-- benchmark scope changes,
-- replay fixtures materially change,
-- benchmark executables are renamed,
-- or new baseline numbers become worth recording.
-
-Avoid updating it for tiny run-to-run fluctuations.
+- The replay result is an in-memory deterministic-fixture baseline, not live-market throughput.
+- Event-time pacing should be disabled for throughput tests because it intentionally waits for source timestamp gaps.
+- Performance is affected by compiler version, CPU topology, power settings, memory pressure, and benchmark fixture composition.
+- Run benchmarks after functional changes to matching, replay, adapters, or book data structures when assessing possible regressions.
