@@ -11,7 +11,7 @@ The current reported experiment uses a BTCUSDT.P feature export generated from r
 | Property | Value |
 |---|---:|
 | Instrument | BTCUSDT.P |
-| Raw feature rows | 2,166,109 |
+| Exported feature rows | 2,166,109 |
 | Exported feature columns | 23 |
 | Valid mid-price rows | 2,166,084 |
 | Unique mid-prices | 422 |
