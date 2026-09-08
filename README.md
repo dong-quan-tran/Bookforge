@@ -12,7 +12,7 @@ At its core is a price-time-priority C++20 matching engine with deterministic re
 - **Deterministic replay:** Normalized UTC epoch-nanosecond timestamps, bounded replays, optional event-time pacing, fixture-based regression coverage, and scheduled injected orders.
 - **Research workflow:** Microstructure feature export, Python dataset/label utilities, XGBoost baseline tooling, chronological and walk-forward evaluation, optional SHAP analysis, and MLflow tracking.
 - **Engineering workflow:** CMake, GoogleTest, Google Benchmark, pybind11, pytest, Ruff, Docker Compose, and GitHub Actions CI.
-- **Performance baseline:** The synthetic Release-mode replay benchmark has measured roughly 4.4M–4.7M events/sec on a Windows development environment. See `docs/BENCHMARKS.md` for the benchmark methodology and reproduce results locally before comparing environments.
+- **Performance baseline:** The synthetic Release-mode replay benchmark has measured roughly 4.4M–4.7M events/sec on a Windows development environment. See `docs/BENCHMARK.md` for the benchmark methodology and reproduce results locally before comparing environments.
 
 ## Verified results
 
@@ -25,7 +25,7 @@ At its core is a price-time-priority C++20 matching engine with deterministic re
 | Research dataset | 2,166,109 BTC feature rows with 23 replay-derived microstructure features |
 | Evaluation | Purged 50-event temporal baseline: 0.3535 macro F1 vs. 0.3324 for an always-flat baseline |
 
-See [benchmark methodology](docs/BENCHMARKS.md) and [experiment results](docs/EXPERIMENTS.md) for reproduction steps and limitations.
+See [benchmark methodology](docs/BENCHMARK.md) and [experiment results](docs/EXPERIMENTS.md) for reproduction steps and limitations.
 
 ## Architecture
 
@@ -212,7 +212,7 @@ Run throughput benchmarks using default unpaced replay. Event-time pacing delibe
 ./build/bench/benchmark_replay
 ```
 
-See `docs/BENCHMARKS.md` for methodology, fixture details, build configuration, and interpretation guidance.
+See `docs/BENCHMARK.md` for methodology, fixture details, build configuration, and interpretation guidance.
 
 ## Why it matters
 
@@ -762,7 +762,7 @@ Architecture, data, snapshots, benchmarking, and interview notes:
 - `docs/SNAPSHOT_SCHEMA.md`
 - `docs/INTERVIEW_PREP.md`
 - `docs/WEEK_BY_WEEK.md`
-- `docs/BENCHMARKS.md`
+- `docs/BENCHMARK.md`
 - `docs/adr/` — architecture decision records for major design choices
 
 ## Author
