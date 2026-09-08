@@ -14,6 +14,19 @@ At its core is a price-time-priority C++20 matching engine with deterministic re
 - **Engineering workflow:** CMake, GoogleTest, Google Benchmark, pybind11, pytest, Ruff, Docker Compose, and GitHub Actions CI.
 - **Performance baseline:** The synthetic Release-mode replay benchmark has measured roughly 4.4M–4.7M events/sec on a Windows development environment. See `docs/BENCHMARKS.md` for the benchmark methodology and reproduce results locally before comparing environments.
 
+## Verified results
+
+| Area | Evidence |
+|---|---|
+| Correctness | 231/231 CTest tests passed locally, including replay, lifecycle, multi-symbol, snapshot, strategy, and CLI integration coverage |
+| Symbol isolation | Feature export filters input events before replay so BTC features cannot include ETH liquidity |
+| Replay throughput | 4.4788M events/s mean and 4.4843M events/s median on a deterministic 10,000-event in-memory fixture in a Release build |
+| Order-book throughput | 3.2522M inserts/s and 5.5811M add/cancel operations/s at a 100,000-order workload scale |
+| Research dataset | 2,166,109 BTC feature rows with 23 replay-derived microstructure features |
+| Evaluation | Purged 50-event temporal baseline: 0.3535 macro F1 vs. 0.3324 for an always-flat baseline |
+
+See [benchmark methodology](docs/BENCHMARKS.md) and [experiment results](docs/EXPERIMENTS.md) for reproduction steps and limitations.
+
 ## Architecture
 
 ```mermaid
